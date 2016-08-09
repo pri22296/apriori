@@ -1,7 +1,7 @@
 from itertools import chain, combinations
 
-support_threshold = 0.4
-confidence_threshold = 0.3
+support_threshold = 0.25
+confidence_threshold = 0.1
 
 global_items = []
 global_rules = []
@@ -74,7 +74,7 @@ def display(dataset, items):
         global_items.append("item: " + str(item) + " , " + str(round(get_count(dataset, item)/len(dataset), 3)))
 
 def main():
-    dataset = get_dataset_from_file('dataset.txt')
+    dataset = get_dataset_from_file('dataset_custom.txt')
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     items = get_initial_items(dataset)
