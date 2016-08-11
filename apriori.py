@@ -65,13 +65,20 @@ def get_subsets(arr):
 def display(dataset, items):
     print()
     for item in items:
+        support = round(get_count(dataset, item)/len(dataset), 3)
+        global_items.append("item: " + str(item) + " , support: " + str(support))
         if len(item) > 1:
             item_set = set(item)
             for subset in get_subsets(item):
                 confidence = round(get_count(dataset, item)/get_count(dataset, subset), 3)
+                lift = round(confidence/(get_count(dataset, list(item_set.difference(subset)))/len(dataset)), 3)
+                conviction = round((1 - (confidence/lift))/(1-confidence), 3)
                 if confidence >= confidence_threshold:
-                    global_rules.append("rule: " + str(sorted(subset)) + " ==> " + str(sorted(list(item_set.difference(subset)))) + " , " + str(confidence))
-        global_items.append("item: " + str(item) + " , " + str(round(get_count(dataset, item)/len(dataset), 3)))
+                    global_rules.append("rule: " + str(sorted(subset)) + " ==> " + str(sorted(list(item_set.difference(subset)))) +
+                                        " , confidence: " + str(confidence) +
+                                        " , lift: " + str(lift) +
+                                        " , conviction: " + str(conviction)
+                                        )
 
 def main():
     dataset = get_dataset_from_file('dataset_custom.txt')
