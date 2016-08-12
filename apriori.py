@@ -1,8 +1,8 @@
 from itertools import chain, combinations
 from operator import itemgetter
 
-support_threshold = 0.15
-confidence_threshold = 0.1
+support_threshold = 0.1
+confidence_threshold = 0.35
 
 global_items = []
 global_rules = []
@@ -196,8 +196,8 @@ def classify(dataset, classes, input_data, k):
 
 def main():
     global global_rules
-    dataset = get_dataset_from_file('Itemset_mini.txt')
-    classes = get_classes_from_file('Classes_mini.txt')
+    dataset = get_dataset_from_file('Itemset.txt')
+    classes = get_classes_from_file('Classes.txt')
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     items = get_initial_items(dataset)
@@ -215,7 +215,7 @@ def main():
     for i in global_rules:
         print("rule: {} ==> {}, confidence = {}, lift = {}, conviction = {}".format(i[0], i[1], i[2], i[3], i[4]))
     print()
-    print("Predicted class: {}".format(classify(dataset, classes, input("input data").split(),10 )))
+    print("Predicted class: {}".format(classify(dataset, classes, input("input data? ").split(','),10 )))
 
 if __name__ == '__main__':
     main()
