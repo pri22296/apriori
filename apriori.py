@@ -119,7 +119,7 @@ def prune_items(dataset, items):
 def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr)-1)])
 
-def display(dataset,classes, items):
+def run(dataset,classes, items):
     global global_rules
     print()
     for item in items:
@@ -201,15 +201,15 @@ def classify(dataset, classes, input_data):
 
 def main():
     global global_rules
-    dataset = get_dataset_from_file('Itemset_train.txt')
-    classes = get_classes_from_file('Classes_train.txt')
+    dataset = get_dataset_from_file('test/Itemset_train.txt')
+    classes = get_classes_from_file('test/Classes_train.txt')
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
     items = get_initial_items(dataset)
     while len(items) > 0:
         items = prune_items(dataset, items)
-        display(dataset,classes, items)
+        run(dataset,classes, items)
         items = generate_new_items(items)
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
@@ -222,8 +222,8 @@ def main():
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
     print()
-    test_dataset = get_dataset_from_file('Itemset_test.txt')
-    test_classes = get_classes_from_file('Classes_test.txt')
+    test_dataset = get_dataset_from_file('test/Itemset_test.txt')
+    test_classes = get_classes_from_file('test/Classes_test.txt')
     po, al = 0, 0
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     print("\nIncorrectly Labelled Itemsets\n")
