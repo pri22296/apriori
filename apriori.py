@@ -9,6 +9,8 @@ top_k_rules = 20
 global_items = []
 global_rules = []
 
+# Extract training datasets from file
+
 def get_dataset_from_file(filename):
     file = open(filename, 'r')
     dataset = []
@@ -16,12 +18,16 @@ def get_dataset_from_file(filename):
         dataset.append(line.strip().rstrip('\n').split(','))
     return dataset
 
+# Extract training classes for classification of dataset
+
 def get_classes_from_file(filename):
     file = open(filename, 'r')
     classes = []
     for line in file:
         classes.append(line.strip().rstrip('\n'))
     return classes
+
+# Get all the Item Values present in the dataset
 
 def get_initial_items(dataset):
     l = []
@@ -107,6 +113,8 @@ def generate_new_items(items):
                 new_items.append(sorted(list(set(items[i]).union(set(items[j])))))
     return new_items
 
+# To remove itemsets below support Threshold
+
 def prune_items(dataset, items):
     to_be_pruned = []
     for item in items:
@@ -150,7 +158,7 @@ def new_match_rule_data(data, rule, label):
         return True
     else:
         return False
-    
+
 def get_default_class(dataset, classes):
     global global_rules
     c = dict.fromkeys(set(classes), 0)
@@ -163,7 +171,7 @@ def get_default_class(dataset, classes):
         if is_match is False:
             c[classes[i]] += 1
     return max(c.items(), key=itemgetter(1))[0]
-    
+
 
 def prune_rules(dataset, classes):
     global global_rules
@@ -180,7 +188,7 @@ def prune_rules(dataset, classes):
         if rule_add:
             pruned_rules.append(rule)
     return pruned_rules
-                
+
 
 def classify(dataset, classes, input_data):
     matching_rules = []
@@ -197,23 +205,37 @@ def classify(dataset, classes, input_data):
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return get_default_class(dataset, classes)
-    
+
 
 def main():
     global global_rules
+
+    # Get dataset from file
     dataset = get_dataset_from_file('Itemset_train.txt')
+
+    # Get training classes from file
     classes = get_classes_from_file('Classes_train.txt')
+
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
+
+    # Get items present in dataset
     items = get_initial_items(dataset)
+
+    # Calculate confidence , lift and support for items
+
     while len(items) > 0:
         items = prune_items(dataset, items)
         display(dataset,classes, items)
         items = generate_new_items(items)
+
+    # Printing item sets with support
+
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
     print()
+
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
