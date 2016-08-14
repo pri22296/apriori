@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import apriori
+import time
 
 support_threshold_list = [i/100 for i in range(1,40)]
 accuracy_list = []
@@ -16,9 +17,24 @@ for sup_th in support_threshold_list:
     accuracy = apriori.test(*apriori.learn(sup_th, confidence_threshold, coverage_threshold), top_k_rules)
     print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
     accuracy_list.append(accuracy)
-    
+
 plt.plot(support_threshold_list, accuracy_list)
 plt.ylabel('accuracy')
 plt.xlabel('support_threshold')
 plt.axis([0, 0.4, 0, 100])
+plt.show()
+
+accuracy_list = []
+
+for sup_th in support_threshold_list:
+    t = time.time()
+    apriori.learn(sup_th, confidence_threshold, coverage_threshold)
+    time_taken = time.time() - t
+    print("time taken for support_threshold {} is {}ms".format(sup_th, round(time_taken*1000, 3)))
+    accuracy_list.append(time_taken)
+    
+plt.plot(support_threshold_list, accuracy_list)
+plt.ylabel('time taken to learn')
+plt.xlabel('support_threshold')
+plt.axis([0, 0.4, 0, 20])
 plt.show()

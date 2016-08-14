@@ -116,7 +116,6 @@ def get_subsets(arr):
 
 def run(dataset,classes, items, confidence_threshold):
     global global_rules
-    print()
     for item in items:
         global_items.append((item, get_support(dataset, item)))
         if len(item) > 1:
