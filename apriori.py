@@ -40,7 +40,6 @@ def get_count(dataset, items):
     return count
 
 def new_get_count(dataset, classes, items):
-    #count_class = dict.fromkeys(set(classes), [0,0])
     count_class = dict()
     for key in set(classes):
         count_class[key] = [0,0]
@@ -65,10 +64,6 @@ def get_support(dataset, items):
     return round(get_count(dataset, items)/len(dataset), 3)
 
 def new_get_support(dataset, classes, items, label):
-    """for global_item in global_items:
-        if(len(global_item[0]) == len(items)):
-            if(len(set(items).intersection(set(global_item[0]))) == len(global_item[0])):
-                return global_item[1]"""
     if label is not None:
         cnt = new_get_count(dataset, classes, items)[label]
         return cnt[0]/cnt[1]
@@ -134,7 +129,6 @@ def run(dataset,classes, items, confidence_threshold):
     global_rules = list(set(global_rules))
 
 def match_rule_data(data, rule):
-    #if set(rule[0]).issubset(set(data)) and set(rule[1]).issubset(set(data)):
     if set(rule[0]).issubset(set(data)):
         return True
     else:
@@ -185,7 +179,6 @@ def classify(dataset, classes, input_data, top_k_rules):
         if len(matching_rules) == top_k_rules:
             break
     if len(matching_rules) > 0:
-        #matching_rules = sorted(matching_rules, key=itemgetter(2), reverse=True)[:k]
         score = dict()
         for rule in matching_rules:
             score[rule[1]] = score.get(rule[1], 0) + rule[2]
@@ -222,19 +215,18 @@ def test(dataset, classes, top_k_rules):
         print("\nrun DataGen.py first")
         sys.exit(0)
         
-    po, al = 0, 0
+    correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     #print("\nIncorrectly Labelled Itemsets\n")
     for i,test_data in enumerate(test_dataset):
-        al += 1
         c = classify(dataset, classes, test_data, top_k_rules)
         if(c == test_classes[i]):
-            po += 1
+            correct_output_counter += 1
         else:
+            incorrect_output_counter += 1
             pass
             #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
-    return round((po/al)*100, 3)
-    #print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))
+    return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def main():
     global global_rules
@@ -252,30 +244,13 @@ def main():
     
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
-    print()
-    #global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
-    """for i in global_rules:
-        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))"""
-    #global_rules = prune_rules(dataset, classes)
-    print("\nRules Left After Pruning\n")
+        
+    print("\n\nRules Left After Pruning\n")
+    
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
-    print()
 
-    print("\nOverall Accuracy: {}%".format(test(*training_data, top_k_rules)))
-    """test_dataset = get_dataset_from_file('Itemset_test.txt')
-    test_classes = get_classes_from_file('Classes_test.txt')
-    po, al = 0, 0
-    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
-    print("\nIncorrectly Labelled Itemsets\n")
-    for i,test_data in enumerate(test_dataset):
-        al += 1
-        c = classify(dataset, classes, test_data)
-        if(c == test_classes[i]):
-            po += 1
-        else:
-            print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
-    print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))"""
+    print("\n\nOverall Accuracy: {}%".format(test(*training_data, top_k_rules)))
 
 if __name__ == '__main__':
     main()
