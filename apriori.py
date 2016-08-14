@@ -1,5 +1,6 @@
 from itertools import chain, combinations
 from operator import itemgetter
+import sys
 
 global_items = []
 global_rules = []
@@ -195,8 +196,12 @@ def classify(dataset, classes, input_data, top_k_rules):
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
     global_rules = []
-    dataset = get_dataset_from_file('Itemset_train.txt')
-    classes = get_classes_from_file('Classes_train.txt')
+    try:
+        dataset = get_dataset_from_file('Itemset_train.txt')
+        classes = get_classes_from_file('Classes_train.txt')
+    except(FileNotFoundError):
+        print("\nrun DataGen.py first")
+        sys.exit(0)
 
     items = get_initial_items(dataset)
     while len(items) > 0:
@@ -210,8 +215,13 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
 
 def test(dataset, classes, top_k_rules):
     global global_rules
-    test_dataset = get_dataset_from_file('Itemset_test.txt')
-    test_classes = get_classes_from_file('Classes_test.txt')
+    try:
+        test_dataset = get_dataset_from_file('Itemset_test.txt')
+        test_classes = get_classes_from_file('Classes_test.txt')
+    except(FileNotFoundError):
+        print("\nrun DataGen.py first")
+        sys.exit(0)
+        
     po, al = 0, 0
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     #print("\nIncorrectly Labelled Itemsets\n")
