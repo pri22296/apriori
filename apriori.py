@@ -1,11 +1,6 @@
 from itertools import chain, combinations
 from operator import itemgetter
 
-support_threshold = 0.05
-confidence_threshold = 0.2
-coverage_threshold = 5
-top_k_rules = 20
-
 global_items = []
 global_rules = []
 
@@ -107,7 +102,7 @@ def generate_new_items(items):
                 new_items.append(sorted(list(set(items[i]).union(set(items[j])))))
     return new_items
 
-def prune_items(dataset, items):
+def prune_items(dataset, items, support_threshold):
     to_be_pruned = []
     for item in items:
         if get_count(dataset, item) < len(dataset)*support_threshold:
@@ -119,7 +114,7 @@ def prune_items(dataset, items):
 def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr)-1)])
 
-def run(dataset,classes, items):
+def run(dataset,classes, items, confidence_threshold):
     global global_rules
     print()
     for item in items:
@@ -165,7 +160,7 @@ def get_default_class(dataset, classes):
     return max(c.items(), key=itemgetter(1))[0]
     
 
-def prune_rules(dataset, classes):
+def prune_rules(dataset, classes, coverage_threshold):
     global global_rules
     pruned_rules = []
     data_count = [0]*len(dataset)
@@ -182,7 +177,7 @@ def prune_rules(dataset, classes):
     return pruned_rules
                 
 
-def classify(dataset, classes, input_data):
+def classify(dataset, classes, input_data, top_k_rules):
     matching_rules = []
     for rule in global_rules:
         if match_rule_data(input_data,rule):
@@ -197,32 +192,69 @@ def classify(dataset, classes, input_data):
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return get_default_class(dataset, classes)
-    
+
+def learn(support_threshold, confidence_threshold, coverage_threshold):
+    global global_rules
+    global_rules = []
+    dataset = get_dataset_from_file('test/Itemset_train.txt')
+    classes = get_classes_from_file('test/Classes_train.txt')
+
+    items = get_initial_items(dataset)
+    while len(items) > 0:
+        items = prune_items(dataset, items, support_threshold)
+        run(dataset, classes, items, confidence_threshold)
+        items = generate_new_items(items)
+
+    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    global_rules = prune_rules(dataset, classes, coverage_threshold)
+    return (dataset, classes)
+
+def test(dataset, classes, top_k_rules):
+    global global_rules
+    test_dataset = get_dataset_from_file('test/Itemset_test.txt')
+    test_classes = get_classes_from_file('test/Classes_test.txt')
+    po, al = 0, 0
+    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    #print("\nIncorrectly Labelled Itemsets\n")
+    for i,test_data in enumerate(test_dataset):
+        al += 1
+        c = classify(dataset, classes, test_data, top_k_rules)
+        if(c == test_classes[i]):
+            po += 1
+        else:
+            pass
+            #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
+    return round((po/al)*100, 3)
+    #print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))
 
 def main():
     global global_rules
-    dataset = get_dataset_from_file('test/Itemset_train.txt')
-    classes = get_classes_from_file('test/Classes_train.txt')
+
+    support_threshold = 0.05
+    confidence_threshold = 0.2
+    coverage_threshold = 5
+    top_k_rules = 20
+    
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
-    items = get_initial_items(dataset)
-    while len(items) > 0:
-        items = prune_items(dataset, items)
-        run(dataset,classes, items)
-        items = generate_new_items(items)
+
+    training_data = learn(support_threshold, confidence_threshold, coverage_threshold)
+    
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
     print()
-    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
-    for i in global_rules:
-        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
-    global_rules = prune_rules(dataset, classes)
+    #global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    """for i in global_rules:
+        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))"""
+    #global_rules = prune_rules(dataset, classes)
     print("\nRules Left After Pruning\n")
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
     print()
-    test_dataset = get_dataset_from_file('test/Itemset_test.txt')
+
+    print("\nOverall Accuracy: {}%".format(test(*training_data, top_k_rules)))
+    """test_dataset = get_dataset_from_file('test/Itemset_test.txt')
     test_classes = get_classes_from_file('test/Classes_test.txt')
     po, al = 0, 0
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
@@ -234,7 +266,7 @@ def main():
             po += 1
         else:
             print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
-    print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))
+    print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))"""
 
 if __name__ == '__main__':
     main()
