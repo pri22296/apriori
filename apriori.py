@@ -1,8 +1,10 @@
 from itertools import chain, combinations
 from operator import itemgetter
 
-support_threshold = 0.1
-confidence_threshold = 0.35
+support_threshold = 0.05
+confidence_threshold = 0.2
+coverage_threshold = 5
+top_k_rules = 20
 
 global_items = []
 global_rules = []
@@ -81,6 +83,13 @@ def new_get_support(dataset, classes, items, label):
             c2 += it[1]
         return c1/c2
 
+def get_class_count(classes, label):
+    count = 0
+    for c in classes:
+        if c == label:
+            count += 1
+    return count
+
 def is_join_candidate(l1, l2):
     l = len(l1)
     for i in range(l-1):
@@ -111,27 +120,23 @@ def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr)-1)])
 
 def display(dataset,classes, items):
+    global global_rules
     print()
     for item in items:
-        #global_items.append("item: " + str(item) + " , support: " + str(get_support(dataset, item)))
         global_items.append((item, get_support(dataset, item)))
         if len(item) > 1:
             item_set = set(item)
             for subset in get_subsets(item):
                 for label in set(classes):
-                    confidence = round(new_get_count(dataset, classes, item)[label][0]/get_count(dataset, item), 3)
-                    #confidence = round(get_support(dataset, item)/get_support(dataset, subset), 3)
-                    #lift = round(confidence/(get_support(dataset, list(item_set.difference(subset)))), 3)
-                    lift = round(confidence*len(dataset)/ new_get_count(dataset, classes, item)[label][1], 3) 
-                    #conviction = round((1 - (confidence/lift))/(1-confidence), 3)
+                    confidence = round(new_get_count(dataset, classes, subset)[label][0]/get_count(dataset, subset), 3)
+                    lift = round(confidence*len(dataset)/ get_class_count(classes, label), 3)
+                    try:
+                        conviction = round((1 - (confidence/lift))/(1-confidence), 3)
+                    except(ZeroDivisionError):
+                        conviction = 1
                     if confidence >= confidence_threshold:
-                        #global_rules.append("rule: " + str(sorted(subset)) + " ==> " + str(sorted(list(item_set.difference(subset)))) +
-                         #                   " , confidence: " + str(confidence) +
-                          #                  " , lift: " + str(lift) +
-                           #                 " , conviction: " + str(conviction)
-                            #                )
-                        #global_rules.append((sorted(subset), sorted(list(item_set.difference(subset))), confidence, lift, conviction))
-                        global_rules.append((sorted(subset), label, confidence, lift, 0))
+                        global_rules.append((tuple(subset), label, confidence, lift, conviction))
+    global_rules = list(set(global_rules))
 
 def match_rule_data(data, rule):
     #if set(rule[0]).issubset(set(data)) and set(rule[1]).issubset(set(data)):
@@ -162,8 +167,6 @@ def get_default_class(dataset, classes):
 
 def prune_rules(dataset, classes):
     global global_rules
-    coverage_threshold = 1
-    global_rules = sorted(global_rules, key=itemgetter(2))
     pruned_rules = []
     data_count = [0]*len(dataset)
     for rule in global_rules:
@@ -172,20 +175,22 @@ def prune_rules(dataset, classes):
             if new_match_rule_data(data, rule, classes[i]) and data_count[i]>=0:
                 rule_add = True
                 data_count[i] += 1
-                if data_count[i] >= coverage_threshold*len(global_rules):
+                if data_count[i] >= coverage_threshold:
                     data_count[i] = -1
         if rule_add:
             pruned_rules.append(rule)
     return pruned_rules
                 
 
-def classify(dataset, classes, input_data, k):
+def classify(dataset, classes, input_data):
     matching_rules = []
     for rule in global_rules:
         if match_rule_data(input_data,rule):
            matching_rules.append(rule)
+        if len(matching_rules) == top_k_rules:
+            break
     if len(matching_rules) > 0:
-        matching_rules = sorted(matching_rules, key=itemgetter(2))[:k]
+        #matching_rules = sorted(matching_rules, key=itemgetter(2), reverse=True)[:k]
         score = dict()
         for rule in matching_rules:
             score[rule[1]] = score.get(rule[1], 0) + rule[2]
@@ -196,26 +201,40 @@ def classify(dataset, classes, input_data, k):
 
 def main():
     global global_rules
-    dataset = get_dataset_from_file('Itemset.txt')
-    classes = get_classes_from_file('Classes.txt')
+    dataset = get_dataset_from_file('Itemset_train.txt')
+    classes = get_classes_from_file('Classes_train.txt')
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
+    print("Coverage Threshold is " + str(coverage_threshold))
     items = get_initial_items(dataset)
     while len(items) > 0:
         items = prune_items(dataset, items)
         display(dataset,classes, items)
         items = generate_new_items(items)
     for i in global_items:
-        print("item: {}, support: {}".format(i[0],i[1]))
+        print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
     print()
+    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     for i in global_rules:
-        print("rule: {} ==> {}, confidence = {}, lift = {}, conviction = {}".format(i[0], i[1], i[2], i[3], i[4]))
+        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
     global_rules = prune_rules(dataset, classes)
-    print("\nRules Pruned\n")
+    print("\nRules Left After Pruning\n")
     for i in global_rules:
-        print("rule: {} ==> {}, confidence = {}, lift = {}, conviction = {}".format(i[0], i[1], i[2], i[3], i[4]))
+        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
     print()
-    print("Predicted class: {}".format(classify(dataset, classes, input("input data? ").split(','),10 )))
+    test_dataset = get_dataset_from_file('Itemset_test.txt')
+    test_classes = get_classes_from_file('Classes_test.txt')
+    po, al = 0, 0
+    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    print("\nIncorrectly Labelled Itemsets\n")
+    for i,test_data in enumerate(test_dataset):
+        al += 1
+        c = classify(dataset, classes, test_data)
+        if(c == test_classes[i]):
+            po += 1
+        else:
+            print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
+    print("\nOverall Accuracy: {}%".format(round((po/al)*100, 3)))
 
 if __name__ == '__main__':
     main()
