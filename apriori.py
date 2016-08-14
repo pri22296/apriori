@@ -1,7 +1,7 @@
 from itertools import chain, combinations
 
 support_threshold = 0.25
-confidence_threshold = 0.5
+confidence_threshold = 0.1
 
 global_items = []
 global_rules = []
@@ -86,8 +86,6 @@ def main():
     print("Confidence Threshold is " + str(confidence_threshold))
     items = get_initial_items(dataset)
     while len(items) > 0:
-        display(dataset, items)
-        print("--------------------------------------------------------------------")
         items = prune_items(dataset, items)
         display(dataset, items)
         items = generate_new_items(items)
