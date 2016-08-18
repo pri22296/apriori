@@ -37,8 +37,8 @@ def generate_set(itemset_file, classes_file, row_count):
     class_stream.close()
 
 def main():
-    generate_set("Itemset_train.txt", "Classes_train.txt", 1500)
-    generate_set("Itemset_test.txt", "Classes_test.txt",500)
+    generate_set("Itemset_train.txt", "Classes_train.txt", 15000)
+    generate_set("Itemset_test.txt", "Classes_test.txt",5000)
 
 if __name__ == "__main__":
     main()

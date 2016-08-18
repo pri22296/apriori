@@ -231,8 +231,8 @@ def test(dataset, classes, top_k_rules):
 def main():
     global global_rules
 
-    support_threshold = 0.05
-    confidence_threshold = 0.2
+    support_threshold = 0.0874
+    confidence_threshold = 0.3171
     coverage_threshold = 5
     top_k_rules = 20
     
