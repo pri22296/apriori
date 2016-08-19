@@ -54,7 +54,7 @@ def evalKnapsack(individual):
     return weight, value
     
 def evalAccuracy(individual):
-    print(individual)
+    #print(individual)
     accuracy = apriori.test(*apriori.learn(*individual,5), 20)
     #print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
     return accuracy,
@@ -107,7 +107,7 @@ def main1():
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
-    pop = toolbox.population(n=5)
+    pop = toolbox.population(n=25)
 
     # CXPB  is the probability with which two individuals
     #       are crossed
@@ -116,7 +116,7 @@ def main1():
     #
     # NGEN  is the number of generations for which the
     #       evolution runs
-    CXPB, MUTPB, NGEN = 1, 1, 20
+    CXPB, MUTPB, NGEN = 0.7, 0.2, 10
     
     print("Start of evolution")
     
@@ -202,8 +202,12 @@ def main2():
     stats.register("min", numpy.min, axis=0)
     stats.register("max", numpy.max, axis=0)
     
-    algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN, stats,
+    result = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN, stats,
                               halloffame=hof)
+
+    logbook = result[1]
+    return logbook.select("gen", "avg", "min", "max")
+    
     
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
