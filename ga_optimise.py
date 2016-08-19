@@ -204,13 +204,13 @@ def main2():
     
     result = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN, stats,
                               halloffame=hof)
-
-    logbook = result[1]
-    return logbook.select("gen", "avg", "min", "max")
     
     
     best_ind = tools.selBest(pop, 1)[0]
+
+    logbook = result[1]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    return logbook.select("gen", "avg", "min", "max")
 
 if __name__ == "__main__":
     main2()
