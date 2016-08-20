@@ -171,7 +171,7 @@ def prune_rules(dataset, classes, coverage_threshold):
     return pruned_rules
                 
 
-def classify(dataset, classes, input_data, top_k_rules):
+def classify(default_class, input_data, top_k_rules):
     matching_rules = []
     for rule in global_rules:
         if match_rule_data(input_data,rule):
@@ -184,7 +184,8 @@ def classify(dataset, classes, input_data, top_k_rules):
             score[rule[1]] = score.get(rule[1], 0) + rule[2]
         return max(score.items(), key=itemgetter(1))[0]
     else:
-        return get_default_class(dataset, classes)
+        return default_class
+        #return get_default_class(dataset, classes)
 
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
@@ -204,9 +205,10 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
 
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     global_rules = prune_rules(dataset, classes, coverage_threshold)
-    return (dataset, classes)
+    #return (dataset, classes)
+    return get_default_class(dataset, classes)
 
-def test(dataset, classes, top_k_rules):
+def test(default_class, top_k_rules):
     global global_rules
     try:
         test_dataset = get_dataset_from_file('Itemset_test.txt')
@@ -219,7 +221,7 @@ def test(dataset, classes, top_k_rules):
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     #print("\nIncorrectly Labelled Itemsets\n")
     for i,test_data in enumerate(test_dataset):
-        c = classify(dataset, classes, test_data, top_k_rules)
+        c = classify(default_class, test_data, top_k_rules)
         if(c == test_classes[i]):
             correct_output_counter += 1
         else:
@@ -240,7 +242,7 @@ def main():
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
 
-    training_data = learn(support_threshold, confidence_threshold, coverage_threshold)
+    default_rule = learn(support_threshold, confidence_threshold, coverage_threshold)
     
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
@@ -250,7 +252,7 @@ def main():
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
 
-    print("\n\nOverall Accuracy: {}%".format(test(*training_data, top_k_rules)))
+    print("\n\nOverall Accuracy: {}%".format(test(default_rule, top_k_rules)))
 
 if __name__ == '__main__':
     main()

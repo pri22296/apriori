@@ -55,7 +55,7 @@ def evalKnapsack(individual):
     
 def evalAccuracy(individual):
     #print(individual)
-    accuracy = apriori.test(*apriori.learn(*individual,5), 20)
+    accuracy = apriori.test(apriori.learn(*individual,5), 20)
     #print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
     return accuracy,
 
@@ -127,6 +127,9 @@ def main1():
     
     print("  Evaluated %i individuals" % len(pop))
     
+    gen_list, avg_list, min_list, max_list = [], [], [], []
+    
+    
     # Begin the evolution
     for g in range(NGEN):
         print("-- Generation %i --" % g)
@@ -179,11 +182,19 @@ def main1():
         print("  Max %s" % max(fits))
         print("  Avg %s" % mean)
         print("  Std %s" % std)
+
+        gen_list.append(g)
+        avg_list.append(mean)
+        min_list.append(min(fits))
+        max_list.append(max(fits))        
+        
     
     print("-- End of (successful) evolution --")
     
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    
+    return gen_list, avg_list, min_list, max_list
     
 def main2():
     NGEN = 10
@@ -213,4 +224,4 @@ def main2():
     return logbook.select("gen", "avg", "min", "max")
 
 if __name__ == "__main__":
-    main2()
+    main1()
