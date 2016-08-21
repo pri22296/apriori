@@ -224,4 +224,4 @@ def main2():
     return logbook.select("gen", "avg", "min", "max")
 
 if __name__ == "__main__":
-    main1()
+    main2()

@@ -112,6 +112,8 @@ def get_subsets(arr):
 
 def run(dataset,classes, items, confidence_threshold):
     global global_rules
+    global global_items
+    
     for item in items:
         global_items.append((item, get_support(dataset, item)))
         if len(item) > 1:
@@ -189,7 +191,10 @@ def classify(default_class, input_data, top_k_rules):
 
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
+    global global_items
+    
     global_rules = []
+    global_items = []
     try:
         dataset = get_dataset_from_file('Itemset_train.txt')
         classes = get_classes_from_file('Classes_train.txt')
@@ -233,8 +238,8 @@ def test(default_class, top_k_rules):
 def main():
     global global_rules
 
-    support_threshold = 0.0874
-    confidence_threshold = 0.3171
+    support_threshold = 0.07
+    confidence_threshold = 0.3
     coverage_threshold = 5
     top_k_rules = 20
     

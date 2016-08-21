@@ -17,7 +17,7 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     print("Confidence Threshold is {}".format(confidence_threshold))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    support_threshold_list = [i/100 for i in range(3,40)]
+    support_threshold_list = [i/100 for i in range(10,40)]
     accuracy_list = []
     
     for sup_th in support_threshold_list:
@@ -25,7 +25,7 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
         print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
         accuracy_list.append(accuracy)
 
-    plot('support_threshold', 'accuracy(%)', support_threshold_list, accuracy_list, [0, 0.4, 0, 100])
+    plot('support_threshold', 'accuracy(%)', support_threshold_list, accuracy_list, [0, 0.4, 0, 110])
 
 def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     print("\nPlotting time taken to extract rules vs support_threshold\n")
@@ -33,7 +33,7 @@ def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     print("Confidence Threshold is {}".format(confidence_threshold))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    support_threshold_list = [i/100 for i in range(3,40)]
+    support_threshold_list = [i/100 for i in range(10,40)]
     timetaken_list = []
     
     for sup_th in support_threshold_list:
@@ -59,14 +59,14 @@ def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
         print("accuracy for confidence_threshold {} is {}".format(conf_th, accuracy))
         accuracy_list.append(accuracy)
 
-    plot('confidence_threshold', 'accuracy(%)', confidence_threshold_list, accuracy_list, [0, 1, 0, 100])
+    plot('confidence_threshold', 'accuracy(%)', confidence_threshold_list, accuracy_list, [0, 1, 0, 110])
 
 def accuracy_vs_iteration(coverage_threshold, top_k_rules):
     print("\nPlotting accuracy vs iteration_count\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    gen, avg, mini, maxi = ga_optimise.main1()
+    gen, avg, mini, maxi = ga_optimise.main2()
 
     plt.plot(gen, avg, 'g',label='average')
     plt.plot(gen, mini, 'r',label='minimum')
@@ -95,7 +95,7 @@ def timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverag
         print("time taken for {}% dataset is {}ms".format(dataset_percent, round(time_taken*1000, 3)))
         timetaken_list.append(time_taken)
         
-    plot('dataset_percent', 'learning_time(seconds)', dataset_percent_list, timetaken_list, [0, 100, 0, 5])
+    plot('dataset_percent', 'learning_time(seconds)', dataset_percent_list, timetaken_list, [0, 110, 0, 5])
 
 def main():
     confidence_threshold = 0.2
@@ -107,7 +107,7 @@ def main():
     timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules)
     accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules)
     accuracy_vs_iteration(coverage_threshold, top_k_rules)
-    timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold)
+    #timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold)
 
     DataGen.main(1500, 500)
     
