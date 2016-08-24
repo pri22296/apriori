@@ -223,7 +223,6 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
 
     global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
     global_rules = prune_rules(dataset, classes, coverage_threshold)
-    #return (dataset, classes)
     return get_default_class(dataset, classes)
 
 def test(default_class, top_k_rules):
