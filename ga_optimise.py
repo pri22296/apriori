@@ -197,7 +197,7 @@ def main1():
     return gen_list, avg_list, min_list, max_list
     
 def main2():
-    NGEN = 10
+    NGEN = 30
     MU = 25
     LAMBDA = 25
     CXPB = 0.7
