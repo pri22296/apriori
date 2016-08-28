@@ -247,6 +247,15 @@ def test(default_class, top_k_rules):
             #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
+def display_items():
+    for i in global_items:
+        print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
+
+def display_rules():
+    for i in global_rules:
+        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
+
+
 def main():
     global global_rules
 
