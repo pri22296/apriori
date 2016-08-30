@@ -21,11 +21,6 @@ def clamp(value, minimum, maximum):
     return value
 
 def evalAccuracy(particle):
-    a,b = particle
-    a = clamp(a, 0.05, 0.4)
-    b = clamp(b, 0.1, 0.9)
-    particle = a,b
-    #print(particle)
     accuracy = apriori.test(apriori.learn(*particle,5), 20)
     return accuracy,
 
@@ -48,7 +43,7 @@ def updateParticle(part, best, phi1, phi2):
         elif speed > part.smax:
             part.speed[i] = part.smax
     part[:] = list(map(operator.add, part, part.speed))
-    part[:] = [clamp(part[0], 0.05, 0.4), clamp(part[1], 0.05, 0.4)]
+    part[:] = [clamp(part[0], 0.05, 0.4), clamp(part[1], 0.1, 0.9)]
 
 toolbox = base.Toolbox()
 toolbox.register("particle", generate, size=2, pmin=0, pmax=1, smin=-3, smax=3)
@@ -67,7 +62,7 @@ def main():
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    GEN = 1000
+    GEN = 20
     best = None
 
     for g in range(GEN):
@@ -85,8 +80,9 @@ def main():
         # Gather all the fitnesses in one list and print the stats
         logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
         print(logbook.stream)
-    
-    return pop, logbook, best
+
+    return logbook.select("gen", "avg", "min", "max")
+    #return pop, logbook, best
 
 if __name__ == "__main__":
     main()

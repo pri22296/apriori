@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import apriori
 import time
 import ga_optimise
+import pso_optimise
 import DataGen
 
 def plot(xlabel, ylabel, xarray, yarray, axis):
@@ -61,12 +62,28 @@ def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
 
     plot('confidence_threshold', 'accuracy(%)', confidence_threshold_list, accuracy_list, [0, 1, 0, 110])
 
-def accuracy_vs_iteration(coverage_threshold, top_k_rules):
-    print("\nPlotting accuracy vs iteration_count\n")
+def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
+    print("\nPlotting accuracy vs ga_iteration_count\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
     gen, avg, mini, maxi = ga_optimise.main2()
+
+    plt.plot(gen, avg, 'g',label='average')
+    plt.plot(gen, mini, 'r',label='minimum')
+    plt.plot(gen, maxi, 'b',label='maximum')
+    plt.ylabel('accuracy(%)')
+    plt.xlabel('generation')
+    plt.legend(loc='best')
+    plt.axis([0 ,10 ,0 ,110])
+    plt.show()
+
+def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
+    print("\nPlotting accuracy vs pso_iteration_count\n")
+    print("top_k_rules is {}".format(top_k_rules))
+    print("Coverage Threshold is {}\n".format(coverage_threshold))
+
+    gen, avg, mini, maxi = pso_optimise.main()
 
     plt.plot(gen, avg, 'g',label='average')
     plt.plot(gen, mini, 'r',label='minimum')
@@ -106,10 +123,11 @@ def main():
     accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules)
     timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules)
     accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules)
-    accuracy_vs_iteration(coverage_threshold, top_k_rules)
+    accuracy_vs_ga_iteration(coverage_threshold, top_k_rules)
+    accuracy_vs_pso_iteration(coverage_threshold, top_k_rules)
     #timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold)
 
-    DataGen.main(1500, 500)
+    #DataGen.main(1500, 500)
     
 
 if __name__ == "__main__":
