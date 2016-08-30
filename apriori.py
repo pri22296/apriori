@@ -196,6 +196,7 @@ def classify(default_class, input_data, top_k_rules):
     else:
         return default_class
 
+#It is assumed that the learning data has more than 1 columns
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
     global global_items
