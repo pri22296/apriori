@@ -118,7 +118,7 @@ def prune_items(dataset, items, support_threshold):
     return items
 
 def get_subsets(arr):
-    return chain(*[combinations(arr, i+1) for i in range(len(arr)-1)])
+    return chain(*[combinations(arr, i+1) for i in range(len(arr))])
 
 def run(dataset, classes, items, confidence_threshold):
     global global_rules
@@ -126,7 +126,7 @@ def run(dataset, classes, items, confidence_threshold):
     
     for item in items:
         global_items.append((item, get_support(dataset, item)))
-        if len(item) > 1:
+        if len(item) > 0:
             item_set = set(item)
             for subset in get_subsets(item):
                 for label in set(classes):
