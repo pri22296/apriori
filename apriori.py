@@ -120,7 +120,7 @@ def prune_items(dataset, items, support_threshold):
 def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr))])
 
-def run(dataset, classes, items, confidence_threshold):
+def run(dataset, classes, items, confidence_threshold, support_threshold):
     global global_rules
     global global_items
     
@@ -130,13 +130,16 @@ def run(dataset, classes, items, confidence_threshold):
             item_set = set(item)
             for subset in get_subsets(item):
                 for label in set(classes):
-                    confidence = round(new_get_count(dataset, classes, subset)[label][0]/get_count(dataset, subset), 3)
-                    lift = round(confidence*len(dataset)/ get_class_count(classes, label), 3)
+                    count = new_get_count(dataset, classes, subset)[label]
+                    support = round(count[0]/len(dataset), 3)
+                    confidence = round(count[0]/get_count(dataset, subset), 3)
+                    confidence_expected = count[1]/len(dataset)
+                    lift = round(confidence/confidence_expected, 3)
                     try:
                         conviction = round((1 - (confidence/lift))/(1-confidence), 3)
                     except(ZeroDivisionError):
                         conviction = 1
-                    if confidence >= confidence_threshold:
+                    if confidence >= confidence_threshold and support >= support_threshold:
                         global_rules.append((tuple(subset), label, confidence, lift, conviction))
     global_rules = list(set(global_rules))
 
@@ -180,6 +183,8 @@ def prune_rules(dataset, classes, coverage_threshold):
             pruned_rules.append(rule)
     return pruned_rules
                 
+def get_score(rule):
+    return rule[2]
 
 def classify(default_class, input_data, top_k_rules):
     matching_rules = []
@@ -191,12 +196,11 @@ def classify(default_class, input_data, top_k_rules):
     if len(matching_rules) > 0:
         score = dict()
         for rule in matching_rules:
-            score[rule[1]] = score.get(rule[1], 0) + rule[2]
+            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return default_class
 
-#It is assumed that the learning data has more than 1 columns
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
     global global_items
@@ -216,13 +220,13 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
     #Get items present in dataset
     items = get_initial_items(dataset)
 
-    #Calculate confidence, lift and suport for items
+    #Calculate confidence, lift and support for items
     while len(items) > 0:
         items = prune_items(dataset, items, support_threshold)
-        run(dataset, classes, items, confidence_threshold)
+        run(dataset, classes, items, confidence_threshold, support_threshold)
         items = generate_new_items(items)
 
-    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
     global_rules = prune_rules(dataset, classes, coverage_threshold)
     return get_default_class(dataset, classes)
 
@@ -236,7 +240,7 @@ def test(default_class, top_k_rules):
         sys.exit(0)
         
     correct_output_counter, incorrect_output_counter = 0, 0
-    global_rules = sorted(global_rules, key=itemgetter(2), reverse=True)
+    global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
     #print("\nIncorrectly Labelled Itemsets\n")
     for i,test_data in enumerate(test_dataset):
         c = classify(default_class, test_data, top_k_rules)
@@ -260,25 +264,24 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.07
-    confidence_threshold = 0.3
-    coverage_threshold = 5
-    top_k_rules = 20
+    support_threshold = 0.005
+    confidence_threshold = 0.75
+    coverage_threshold = 10
+    top_k_rules = 200
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
+    print("top_k_rules is " + str(top_k_rules))
 
     default_rule = learn(support_threshold, confidence_threshold, coverage_threshold)
 
     #Printing itemsets with support
-    for i in global_items:
-        print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
+    display_items()
         
     print("\n\nRules Left After Pruning\n")
-    
-    for i in global_rules:
-        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
+
+    display_rules()
 
     print("\n\nOverall Accuracy: {}%".format(test(default_rule, top_k_rules)))
 

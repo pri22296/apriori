@@ -1,8 +1,7 @@
 import apriori
+from scipy.stats.distributions import chi2
 
-chi2_dist = [5.024, 7.378, 9.348, 11.143, 12.833, 14.449, 16.013, 17.535, 19.023,
-             20.483, 21.920, 23.337, 24.736, 26.119, 27.488, 28.845, 30.191,
-             31.526, 32.852, 34.170]
+significance_level = 0.005
 
 dataset = apriori.get_dataset_from_file('Itemset_train.txt')
 classes = apriori.get_classes_from_file('Classes_train.txt')
@@ -30,7 +29,7 @@ for feature_options in feature_options_list:
             expected = k[1]*ws0/ws1
             observed = k[0]
             chi += (observed-expected)**2/expected
-    chi_critical = chi2_dist[degree-1]
+    chi_critical = round(chi2.isf(significance_level, degree), 3)
     print("chi2_stats = {}, chi2_critical_value = {}".format(round(chi, 3), chi_critical))
     if(chi > chi_critical):
         print("Important\n")

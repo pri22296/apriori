@@ -18,7 +18,7 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     print("Confidence Threshold is {}".format(confidence_threshold))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    support_threshold_list = [i/100 for i in range(10,40)]
+    support_threshold_list = [i/1000 for i in range(5,11)]
     accuracy_list = []
     
     for sup_th in support_threshold_list:
@@ -115,9 +115,9 @@ def timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverag
     plot('dataset_percent', 'learning_time(seconds)', dataset_percent_list, timetaken_list, [0, 110, 0, 5])
 
 def main():
-    confidence_threshold = 0.2
+    confidence_threshold = 0.5
     coverage_threshold = 5
-    top_k_rules = 20
+    top_k_rules = 50
     support_threshold = 0.07
 
     accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules)

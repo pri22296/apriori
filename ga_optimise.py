@@ -87,14 +87,14 @@ def clamp(value, minimum, maximum):
     
 def decoy_cxSim(ind1, ind2):
     ind1, ind2 = tools.cxBlend(ind1, ind2, 0.5)
-    ind1[0], ind2[0] = clamp(ind1[0],0.05,0.4), clamp(ind2[0],0.05,0.4)
-    ind1[1], ind2[1] = clamp(ind1[1],0.1,0.9), clamp(ind2[1],0.1,0.9)
+    ind1[0], ind2[0] = clamp(ind1[0],0.02,0.4), clamp(ind2[0],0.02,0.4)
+    ind1[1], ind2[1] = clamp(ind1[1],0.02,0.9), clamp(ind2[1],0.02,0.9)
     return ind1,ind2
     
 def decoy_mutPoly(individual):
     individual, = tools.mutPolynomialBounded(individual, 0, 0.4, 0.95, 0.4)
-    individual[0] = clamp(individual[0],0.05,0.4)
-    individual[1] = clamp(individual[1],0.05,0.9)
+    individual[0] = clamp(individual[0],0.02,0.4)
+    individual[1] = clamp(individual[1],0.02,0.9)
     return individual,
 
 toolbox.register("evaluate", evalAccuracy)

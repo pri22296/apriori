@@ -6,14 +6,15 @@ outputs them in a file named output.txt
 import apriori
 
 def main():
-    support_threshold = 0.07
-    confidence_threshold = 0.3
+    support_threshold = 0.005
+    confidence_threshold = 0.5
     coverage_threshold = 5
-    top_k_rules = 20
+    top_k_rules = 50
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
+    print("top_k_rules is " + str(top_k_rules))
 
     default_rule = apriori.learn(support_threshold, confidence_threshold, coverage_threshold)
     f = open('Input.txt', 'r')
