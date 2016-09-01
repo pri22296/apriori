@@ -139,7 +139,7 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
                         conviction = round((1 - (confidence/lift))/(1-confidence), 3)
                     except(ZeroDivisionError):
                         conviction = 1
-                    if confidence >= confidence_threshold and support >= support_threshold:
+                    if confidence >= confidence_threshold and support >= support_threshold and lift > 1:
                         global_rules.append((tuple(subset), label, confidence, lift, conviction))
     global_rules = list(set(global_rules))
 
@@ -184,7 +184,7 @@ def prune_rules(dataset, classes, coverage_threshold):
     return pruned_rules
                 
 def get_score(rule):
-    return rule[2]
+    return rule[3]
 
 def classify(default_class, input_data, top_k_rules):
     matching_rules = []
@@ -253,10 +253,12 @@ def test(default_class, top_k_rules):
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
+    global global_items
     for i in global_items:
         print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
 
 def display_rules():
+    global global_rules
     for i in global_rules:
         print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
 
@@ -264,10 +266,10 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.005
+    support_threshold = 0.001
     confidence_threshold = 0.75
-    coverage_threshold = 10
-    top_k_rules = 200
+    coverage_threshold = 2
+    top_k_rules = 30
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
