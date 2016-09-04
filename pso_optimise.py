@@ -21,7 +21,7 @@ def clamp(value, minimum, maximum):
     return value
 
 def evalAccuracy(particle):
-    accuracy = apriori.test(apriori.learn(*particle,5), 20)
+    accuracy = apriori.test(apriori.learn(*particle,5), 5)
     return accuracy,
 
 def generate(size, pmin, pmax, smin, smax):
@@ -64,6 +64,8 @@ def main():
 
     GEN = 20
     best = None
+
+    random.seed(60)
 
     for g in range(GEN):
         for part in pop:

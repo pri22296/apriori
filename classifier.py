@@ -1,12 +1,12 @@
 """
-Classifies a List of Input Itemsets and
-outputs them in a file named output.txt
+Classifies a List of Input Itemsets from file named
+Input.txt and outputs them in a file named Output.txt
 """
 
 import apriori
 
 def main():
-    support_threshold = 0.005
+    support_threshold = 0.0011
     confidence_threshold = 0.5
     coverage_threshold = 5
     top_k_rules = 50
@@ -31,4 +31,5 @@ def main():
 
     print("Output written to file named Output.txt in the current working directory")
 
-main()
+if __name__ == "__main__":
+    main()

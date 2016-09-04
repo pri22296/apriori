@@ -1,6 +1,7 @@
 from itertools import chain, combinations
 from operator import itemgetter
 import sys
+import math
 
 global_items = []
 global_rules = []
@@ -132,7 +133,10 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
                 for label in set(classes):
                     count = new_get_count(dataset, classes, subset)[label]
                     support = round(count[0]/len(dataset), 3)
-                    confidence = round(count[0]/get_count(dataset, subset), 3)
+                    try:
+                        confidence = round(count[0]/get_count(dataset, subset), 3)
+                    except (ZeroDivisionError):
+                        confidence = 0
                     confidence_expected = count[1]/len(dataset)
                     lift = round(confidence/confidence_expected, 3)
                     try:
@@ -184,7 +188,13 @@ def prune_rules(dataset, classes, coverage_threshold):
     return pruned_rules
                 
 def get_score(rule):
-    return rule[3]
+    return rule[2]
+
+def get_cohesion(data, rule):
+    if match_rule_data(data, rule, None) is False:
+        return 0
+    else:
+        return 10/(1 + math.e**(len(set(data).difference(set(rule[0])))))
 
 def classify(default_class, input_data, top_k_rules):
     matching_rules = []
@@ -196,7 +206,7 @@ def classify(default_class, input_data, top_k_rules):
     if len(matching_rules) > 0:
         score = dict()
         for rule in matching_rules:
-            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)
+            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)*get_cohesion(input_data, rule)
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return default_class
@@ -219,7 +229,7 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
 
     #Get items present in dataset
     items = get_initial_items(dataset)
-
+    
     #Calculate confidence, lift and support for items
     while len(items) > 0:
         items = prune_items(dataset, items, support_threshold)
@@ -241,7 +251,7 @@ def test(default_class, top_k_rules):
         
     correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    #print("\nIncorrectly Labelled Itemsets\n")
+    print("\nIncorrectly Labelled Itemsets\n")
     for i,test_data in enumerate(test_dataset):
         c = classify(default_class, test_data, top_k_rules)
         if(c == test_classes[i]):
@@ -249,27 +259,31 @@ def test(default_class, top_k_rules):
         else:
             incorrect_output_counter += 1
             pass
-            #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
+            print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
+    print("\nClassified {} Inputs".format(len(test_dataset)))
+    print("Correctly Classified {} Inputs".format(correct_output_counter))
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
     global global_items
+    print("{!s:^80} \t {:^15}\n".format("item","support"))
     for i in global_items:
-        print("item: {!s:30} \tsupport: {:<10}".format(i[0],i[1]))
+        print("{!s:<80} \t {:^15}".format(i[0],i[1]))
 
 def display_rules():
     global global_rules
+    print("{!s:^80} \t {:^15} \t {:^10} \t {:^10} \t {:^10}\n".format("antecedent","consequent","confidence","lift","conviction"))
     for i in global_rules:
-        print("rule: {!s:>20} ==> {:<10} \tconfidence = {:<10} \tlift = {:<10} \tconviction = {:<10}".format(i[0], i[1], i[2], i[3], i[4]))
+        print("{!s:<80} \t {:^15} \t {:^10} \t {:^10} \t {:^10}".format(i[0], i[1], i[2], i[3], i[4]))
 
 
 def main():
     global global_rules
 
-    support_threshold = 0.001
-    confidence_threshold = 0.75
-    coverage_threshold = 2
-    top_k_rules = 30
+    support_threshold = 0.01
+    confidence_threshold = 0.2
+    coverage_threshold = 5
+    top_k_rules = 5
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
@@ -278,7 +292,7 @@ def main():
 
     default_rule = learn(support_threshold, confidence_threshold, coverage_threshold)
 
-    #Printing itemsets with support
+    #Printing itemsets with support greater than support threshold
     display_items()
         
     print("\n\nRules Left After Pruning\n")
