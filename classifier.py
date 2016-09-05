@@ -6,10 +6,10 @@ Input.txt and outputs them in a file named Output.txt
 import apriori
 
 def main():
-    support_threshold = 0.0011
-    confidence_threshold = 0.5
+    support_threshold = 0.02
+    confidence_threshold = 0.1786
     coverage_threshold = 5
-    top_k_rules = 50
+    top_k_rules = 10
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))

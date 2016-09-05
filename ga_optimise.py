@@ -55,7 +55,7 @@ def evalKnapsack(individual):
     
 def evalAccuracy(individual):
     #print(individual)
-    accuracy = apriori.test(apriori.learn(*individual,5), 20)
+    accuracy = apriori.test(apriori.learn(*individual,10), 20)
     #print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
     return accuracy,
 
