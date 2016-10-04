@@ -211,7 +211,7 @@ def get_cohesion(data, rule):
     if match_rule_data(data, rule, None) is False:
         return 0
     else:
-        return 10/(1 + math.e**(len(set(data).difference(set(rule[0])))))
+        return 10/(1 + math.e**(-len(set(data).difference(set(rule[0])))))
 
 def classify(default_class, input_data, top_k_rules):
     matching_rules = []
@@ -268,7 +268,7 @@ def test(default_class, top_k_rules):
         
     correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    print("\nIncorrectly Labelled Itemsets\n")
+    #print("\nIncorrectly Labelled Itemsets\n")
     for i,test_data in enumerate(test_dataset):
         c = classify(default_class, test_data, top_k_rules)
         if(c == test_classes[i]):
@@ -276,9 +276,9 @@ def test(default_class, top_k_rules):
         else:
             incorrect_output_counter += 1
             pass
-            print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
-    print("\nClassified {} Inputs".format(len(test_dataset)))
-    print("Correctly Classified {} Inputs".format(correct_output_counter))
+            #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
+    #print("\nClassified {} Inputs".format(len(test_dataset)))
+    #print("Correctly Classified {} Inputs".format(correct_output_counter))
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
@@ -300,7 +300,7 @@ def main():
     support_threshold = 0.02
     confidence_threshold = 0.2
     coverage_threshold = 5
-    top_k_rules = 5
+    top_k_rules = 10
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))

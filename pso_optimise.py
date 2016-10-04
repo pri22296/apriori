@@ -62,7 +62,7 @@ def main():
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    GEN = 20
+    GEN = 100
     best = None
 
     random.seed(60)
