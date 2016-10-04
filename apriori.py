@@ -29,9 +29,23 @@ def get_initial_items(dataset):
         l.append([item])
     return sorted(l)
 
+#Checks if an itemset contains two possible options of the same column
+#In case of tabular data count of such a itemset will be guaranteed to be 0
+#Returns True for validity, False for invalidity
+def check_validity_of_itemset_for_tabular_data(items):
+    attr_list = []
+    for item in items:
+        attr_list.append(item.split('-')[0])
+    if len(attr_list) == len(set(attr_list)):
+        return True
+    else:
+        return False
+
 #Returns the count of items in the dataset irrespective of the class
 def get_count(dataset, items):
     count = 0
+    if check_validity_of_itemset_for_tabular_data(items) is False:
+        return count
     for data in dataset:
         found = True
         for item in items:
@@ -46,10 +60,12 @@ def get_count(dataset, items):
 
 #Returns a dict of classes as keys and
 #[count of items where class is 'key' in dataset, count of class 'key'] as value
-def new_get_count(dataset, classes, items):
+def get_classwise_count(dataset, classes, items):
     count_class = dict()
     for key in set(classes):
         count_class[key] = [0,0]
+    if check_validity_of_itemset_for_tabular_data(items) is False:
+        return count_class
     for i,data in enumerate(dataset):
         found = True
         for item in items:
@@ -72,11 +88,11 @@ def get_support(dataset, items):
 
 def new_get_support(dataset, classes, items, label):
     if label is not None:
-        cnt = new_get_count(dataset, classes, items)[label]
+        cnt = get_classwise_count(dataset, classes, items)[label]
         return cnt[0]/cnt[1]
     else:
         c1,c2 = 0,0
-        for it in new_get_count(dataset, classes, items).values():
+        for it in get_classwise_count(dataset, classes, items).values():
             c1 += it[0]
             c2 += it[1]
         return c1/c2
@@ -118,6 +134,9 @@ def prune_items(dataset, items, support_threshold):
         items.remove(item)
     return items
 
+#Unused function
+#Just here so that if needed in future
+#Handy function to generate subsets
 def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr))])
 
@@ -128,23 +147,21 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
     for item in items:
         global_items.append((item, get_support(dataset, item)))
         if len(item) > 0:
-            item_set = set(item)
-            for subset in get_subsets(item):
-                for label in set(classes):
-                    count = new_get_count(dataset, classes, subset)[label]
-                    support = round(count[0]/len(dataset), 3)
-                    try:
-                        confidence = round(count[0]/get_count(dataset, subset), 3)
-                    except (ZeroDivisionError):
-                        confidence = 0
-                    confidence_expected = count[1]/len(dataset)
-                    lift = round(confidence/confidence_expected, 3)
-                    try:
-                        conviction = round((1 - (confidence/lift))/(1-confidence), 3)
-                    except(ZeroDivisionError):
-                        conviction = 1
-                    if confidence >= confidence_threshold and support >= support_threshold and lift > 1:
-                        global_rules.append((tuple(subset), label, confidence, lift, conviction))
+            for label in set(classes):
+                count = get_classwise_count(dataset, classes, item)[label]
+                support = round(count[0]/len(dataset), 3)
+                try:
+                    confidence = round(count[0]/get_count(dataset, item), 3)
+                except (ZeroDivisionError):
+                    confidence = 0
+                confidence_expected = count[1]/len(dataset)
+                lift = round(confidence/confidence_expected, 3)
+                try:
+                    conviction = round((1 - (confidence/lift))/(1-confidence), 3)
+                except(ZeroDivisionError):
+                    conviction = 1
+                if confidence >= confidence_threshold and support >= support_threshold and lift > 1:
+                    global_rules.append((tuple(item), label, confidence, lift, conviction))
     global_rules = list(set(global_rules))
 
 #Returns True if data is a superset of antecedent of rule,
@@ -280,7 +297,7 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.01
+    support_threshold = 0.02
     confidence_threshold = 0.2
     coverage_threshold = 5
     top_k_rules = 5
