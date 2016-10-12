@@ -29,23 +29,9 @@ def get_initial_items(dataset):
         l.append([item])
     return sorted(l)
 
-#Checks if an itemset contains two possible options of the same column
-#In case of tabular data count of such a itemset will be guaranteed to be 0
-#Returns True for validity, False for invalidity
-def check_validity_of_itemset_for_tabular_data(items):
-    attr_list = []
-    for item in items:
-        attr_list.append(item.split('-')[0])
-    if len(attr_list) == len(set(attr_list)):
-        return True
-    else:
-        return False
-
 #Returns the count of items in the dataset irrespective of the class
 def get_count(dataset, items):
     count = 0
-    if check_validity_of_itemset_for_tabular_data(items) is False:
-        return count
     for data in dataset:
         found = True
         for item in items:
@@ -64,8 +50,6 @@ def get_classwise_count(dataset, classes, items):
     count_class = dict()
     for key in set(classes):
         count_class[key] = [0,0]
-    if check_validity_of_itemset_for_tabular_data(items) is False:
-        return count_class
     for i,data in enumerate(dataset):
         found = True
         for item in items:
@@ -111,7 +95,11 @@ def should_join_candidate(l1, l2):
     for i in range(l-1):
         if l1[i] != l2[i]:
             return False
-    if l1[l-1] == l2[l-1]:
+    #if l1[l-1] == l2[l-1]:
+        #return False
+    #If both candidates belong to same class then they should not join
+    #If classwise data is not available then this just compares equality
+    if l1[l-1].split('-')[0] == l2[l-1].split('-')[0]:
         return False
     return True
 
@@ -152,13 +140,12 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
                 support = round(count[0]/len(dataset), 3)
                 try:
                     confidence = round(count[0]/get_count(dataset, item), 3)
+                    confidence_expected = count[1]/len(dataset)
+                    lift = round(confidence/confidence_expected, 3)
+                    conviction = round((1 - (confidence/lift))/(1-confidence), 3)
                 except (ZeroDivisionError):
                     confidence = 0
-                confidence_expected = count[1]/len(dataset)
-                lift = round(confidence/confidence_expected, 3)
-                try:
-                    conviction = round((1 - (confidence/lift))/(1-confidence), 3)
-                except(ZeroDivisionError):
+                    lift = 1
                     conviction = 1
                 if confidence >= confidence_threshold and support >= support_threshold and lift > 1:
                     global_rules.append((tuple(item), label, confidence, lift, conviction))
@@ -207,12 +194,6 @@ def prune_rules(dataset, classes, coverage_threshold):
 def get_score(rule):
     return rule[2]
 
-def get_cohesion(data, rule):
-    if match_rule_data(data, rule, None) is False:
-        return 0
-    else:
-        return 10/(1 + math.e**(-len(set(data).difference(set(rule[0])))))
-
 def classify(default_class, input_data, top_k_rules):
     matching_rules = []
     for rule in global_rules:
@@ -223,7 +204,7 @@ def classify(default_class, input_data, top_k_rules):
     if len(matching_rules) > 0:
         score = dict()
         for rule in matching_rules:
-            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)*get_cohesion(input_data, rule)
+            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return default_class
@@ -241,7 +222,7 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
         #Get training classes from file
         classes = get_classes_from_file('Classes_train.txt')
     except(FileNotFoundError):
-        print("\nrun DataGen.py first")
+        print("\nUnable to open Training Dataset")
         sys.exit(0)
 
     #Get items present in dataset
@@ -250,6 +231,7 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
     #Calculate confidence, lift and support for items
     while len(items) > 0:
         items = prune_items(dataset, items, support_threshold)
+        print(len(items))
         run(dataset, classes, items, confidence_threshold, support_threshold)
         items = generate_new_items(items)
 
@@ -268,55 +250,66 @@ def test(default_class, top_k_rules):
         
     correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    #print("\nIncorrectly Labelled Itemsets\n")
+    print("\nINCORRECTLY LABELLED ITEMSETS\n")
+    print("-"*165)
+    print("{!s:130} \t| {:^10} \t| {:^10}|".format("Itemset", "Expected", "Output"))
+    print("-"*165)
     for i,test_data in enumerate(test_dataset):
         c = classify(default_class, test_data, top_k_rules)
         if(c == test_classes[i]):
             correct_output_counter += 1
         else:
             incorrect_output_counter += 1
-            pass
-            #print("{!s:80} \tExpected: {:<10} \tOutput: {:<10}".format(test_data, test_classes[i], c))
-    #print("\nClassified {} Inputs".format(len(test_dataset)))
-    #print("Correctly Classified {} Inputs".format(correct_output_counter))
+            print("{!s:130} \t| {:^10} \t| {:^10}|".format(", ".join(test_data), test_classes[i], c))
+    print("-"*165)
+    print("\nClassified {} Inputs".format(len(test_dataset)))
+    print("Correctly Classified {} Inputs".format(correct_output_counter))
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
     global global_items
-    print("{!s:^80} \t {:^15}\n".format("item","support"))
+    print("-"*165)
+    print("{!s:^80} \t| {:^15}|".format("Itemset","Support"))
+    print("-"*165)
     for i in global_items:
-        print("{!s:<80} \t {:^15}".format(i[0],i[1]))
+        print("{!s:<80} \t| {:^15}|".format(", ".join(i[0]),i[1]))
+    print("-"*165)
 
 def display_rules():
     global global_rules
-    print("{!s:^80} \t {:^15} \t {:^10} \t {:^10} \t {:^10}\n".format("antecedent","consequent","confidence","lift","conviction"))
+    print("-"*165)
+    print("{!s:^80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format("Antecedent","Consequent","Confidence","Lift","Conviction"))
+    print("-"*165)
     for i in global_rules:
-        print("{!s:<80} \t {:^15} \t {:^10} \t {:^10} \t {:^10}".format(i[0], i[1], i[2], i[3], i[4]))
+        print("{!s:<80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format(", ".join(i[0]), i[1], i[2], i[3], i[4]))
+    print("-"*165)
 
 
 def main():
     global global_rules
 
-    support_threshold = 0.02
+    support_threshold = 0.2
     confidence_threshold = 0.2
     coverage_threshold = 5
-    top_k_rules = 10
+    top_k_rules = 25
     
     print("Support Threshold is " + str(support_threshold))
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
     print("top_k_rules is " + str(top_k_rules))
 
-    default_rule = learn(support_threshold, confidence_threshold, coverage_threshold)
+    default_class = learn(support_threshold, confidence_threshold, coverage_threshold)
 
+    print("\n\nFREQUENT ITEMSETS\n")
+    
     #Printing itemsets with support greater than support threshold
     display_items()
         
-    print("\n\nRules Left After Pruning\n")
+    print("\n\nRULES LEFT AFTER PRUNING\n")
 
     display_rules()
 
-    print("\n\nOverall Accuracy: {}%".format(test(default_rule, top_k_rules)))
+    print("\n\nOverall Accuracy: {}%".format(test(default_class, top_k_rules)))
 
 if __name__ == '__main__':
     main()

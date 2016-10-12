@@ -21,7 +21,7 @@ for feature_options in feature_options_list:
     expect = []
     chi = 0
     for feature_option in feature_options:
-        t = apriori.new_get_count(dataset, classes, [feature_option])
+        t = apriori.get_classwise_count(dataset, classes, [feature_option])
         l = list(t.values())
         ws0 = weird_sum(l,0)
         ws1 = weird_sum(l,1)
