@@ -9,6 +9,14 @@ from deap import benchmarks
 from deap import creator
 from deap import tools
 
+MIN_SUPPORT_THRESHOLD = 0.1
+MAX_SUPPORT_THRESHOLD = 0.4
+MIN_CONF_THRESHOLD = 0.1
+MAX_CONF_THRESHOLD = 0.9
+
+DEFAULT_COVERAGE_THRESHOLD = 5
+DEFAULT_TOP_K_RULES = 25
+
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, best=None)
@@ -20,8 +28,18 @@ def clamp(value, minimum, maximum):
         return maximum
     return value
 
+def my_rule_filter(rule):
+    if rule.support >= my_rule_filter.particle[0]:
+        return True
+    if rule.confidence >= my_rule_filter.particle[1]:
+        return True
+    return False
+
 def evalAccuracy(particle):
-    accuracy = apriori.test(apriori.learn(*particle,5), 5)
+    my_rule_filter.particle = particle
+    dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
+    default_class = apriori.get_default_class(dataset, classes, my_rule_filter)
+    accuracy = apriori.test(default_class, DEFAULT_TOP_K_RULES, my_rule_filter)
     return accuracy,
 
 def generate(size, pmin, pmax, smin, smax):
@@ -43,7 +61,8 @@ def updateParticle(part, best, phi1, phi2):
         elif speed > part.smax:
             part.speed[i] = part.smax
     part[:] = list(map(operator.add, part, part.speed))
-    part[:] = [clamp(part[0], 0.05, 0.4), clamp(part[1], 0.1, 0.9)]
+    part[:] = [clamp(part[0], MIN_SUPPORT_THRESHOLD, MAX_SUPPORT_THRESHOLD),
+               clamp(part[1], MIN_CONF_THRESHOLD, MAX_CONF_THRESHOLD)]
 
 toolbox = base.Toolbox()
 toolbox.register("particle", generate, size=2, pmin=0, pmax=1, smin=-3, smax=3)
@@ -59,10 +78,12 @@ def main():
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
 
+    apriori.learn(MIN_SUPPORT_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD)
+
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    GEN = 100
+    GEN = 20
     best = None
 
     random.seed(60)

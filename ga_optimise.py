@@ -13,6 +13,14 @@ MAX_ITEM = 50
 MAX_WEIGHT = 50
 NBR_ITEMS = 20
 
+MIN_SUPPORT_THRESHOLD = 0.1
+MAX_SUPPORT_THRESHOLD = 0.4
+MIN_CONF_THRESHOLD = 0.1
+MAX_CONF_THRESHOLD = 0.9
+
+DEFAULT_COVERAGE_THRESHOLD = 5
+DEFAULT_TOP_K_RULES = 25
+
 # To assure reproductibility, the RNG seed is set prior to the items
 # dict initialization. It is also seeded in main().
 random.seed(64)
@@ -33,10 +41,10 @@ toolbox = base.Toolbox()
 toolbox.register("attr_item", random.uniform, 0, 1)
 
 def random_support():
-    return random.uniform(0.05,0.4)
+    return random.uniform(MIN_SUPPORT_THRESHOLD, MAX_SUPPORT_THRESHOLD)
     
 def random_confidence():
-    return random.uniform(0.05,0.9)
+    return random.uniform(MIN_CONF_THRESHOLD, MAX_CONF_THRESHOLD)
 
 # Structure initializers
 toolbox.register("individual", tools.initCycle, creator.Individual, 
@@ -52,11 +60,19 @@ def evalKnapsack(individual):
     if len(individual) > MAX_ITEM or weight > MAX_WEIGHT:
         return 10000, 0             # Ensure overweighted bags are dominated
     return weight, value
-    
+
+def my_rule_filter(rule):
+    if rule.support >= my_rule_filter.individual[0]:
+        return True
+    if rule.confidence >= my_rule_filter.individual[1]:
+        return True
+    return False
+
 def evalAccuracy(individual):
-    #print(individual)
-    accuracy = apriori.test(apriori.learn(*individual,10), 20)
-    #print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
+    my_rule_filter.individual = individual
+    dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
+    default_class = apriori.get_default_class(dataset, classes, my_rule_filter)
+    accuracy = apriori.test(default_class, DEFAULT_TOP_K_RULES, my_rule_filter)
     return accuracy,
 
 def cxSet(ind1, ind2):
@@ -87,14 +103,16 @@ def clamp(value, minimum, maximum):
     
 def decoy_cxSim(ind1, ind2):
     ind1, ind2 = tools.cxBlend(ind1, ind2, 0.5)
-    ind1[0], ind2[0] = clamp(ind1[0],0.02,0.4), clamp(ind2[0],0.02,0.4)
-    ind1[1], ind2[1] = clamp(ind1[1],0.02,0.9), clamp(ind2[1],0.02,0.9)
+    ind1[0] = clamp(ind1[0], MIN_SUPPORT_THRESHOLD, MAX_SUPPORT_THRESHOLD) 
+    ind2[0] = clamp(ind2[0], MIN_SUPPORT_THRESHOLD, MAX_SUPPORT_THRESHOLD)
+    ind1[1] = clamp(ind1[1], MIN_CONF_THRESHOLD, MAX_CONF_THRESHOLD)
+    ind2[1] = clamp(ind2[1], MIN_CONF_THRESHOLD, MAX_CONF_THRESHOLD)
     return ind1,ind2
     
 def decoy_mutPoly(individual):
     individual, = tools.mutPolynomialBounded(individual, 0, 0.4, 0.95, 0.4)
-    individual[0] = clamp(individual[0],0.02,0.4)
-    individual[1] = clamp(individual[1],0.02,0.9)
+    individual[0] = clamp(individual[0], MIN_SUPPORT_THRESHOLD, MAX_SUPPORT_THRESHOLD)
+    individual[1] = clamp(individual[1], MIN_CONF_THRESHOLD, MAX_CONF_THRESHOLD)
     return individual,
 
 toolbox.register("evaluate", evalAccuracy)
@@ -102,8 +120,10 @@ toolbox.register("mate", decoy_cxSim)
 toolbox.register("mutate", decoy_mutPoly)
 toolbox.register("select", tools.selRoulette)
                  
-def main1():
+def main_old():
     random.seed(60)
+
+    apriori.learn(MIN_CONF_THRESHOLD, MIN_CONF_THRESHOLD, 5)
 
     # create an initial population of 300 individuals (where
     # each individual is a list of integers)
@@ -196,7 +216,7 @@ def main1():
     
     return gen_list, avg_list, min_list, max_list
     
-def main2():
+def main():
     NGEN = 30
     MU = 25
     LAMBDA = 25
@@ -204,6 +224,8 @@ def main2():
     MUTPB = 0.2
     
     random.seed(60)
+
+    apriori.learn(MIN_CONF_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD)
     
     pop = toolbox.population(n=MU)
     hof = tools.ParetoFront()
@@ -224,4 +246,4 @@ def main2():
     return logbook.select("gen", "avg", "min", "max")
 
 if __name__ == "__main__":
-    main2()
+    main()

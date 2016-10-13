@@ -16,12 +16,12 @@ def main():
     print("Coverage Threshold is " + str(coverage_threshold))
     print("top_k_rules is " + str(top_k_rules))
 
-    default_rule = apriori.learn(support_threshold, confidence_threshold, coverage_threshold)
+    default_class = apriori.learn(support_threshold, confidence_threshold, coverage_threshold)
     f = open('Input.txt', 'r')
     g = open('Output.txt', 'w')
 
     for line in f:
-        g.write(apriori.classify(default_rule, line.strip().rstrip('\n').split(','), top_k_rules) + '\n')
+        g.write(apriori.classify(default_class, line.strip().rstrip('\n').split(','), top_k_rules) + '\n')
 
     apriori.display_items()
     apriori.display_rules()

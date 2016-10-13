@@ -126,8 +126,6 @@ def main():
     accuracy_vs_ga_iteration(coverage_threshold, top_k_rules)
     accuracy_vs_pso_iteration(coverage_threshold, top_k_rules)
     #timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold)
-
-    #DataGen.main(1500, 500)
     
 
 if __name__ == "__main__":

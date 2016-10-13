@@ -1,10 +1,14 @@
 from itertools import chain, combinations
 from operator import itemgetter
+from collections import namedtuple
 import sys
 import math
 
 global_items = []
 global_rules = []
+
+Rule = namedtuple("Rule", ('antecedent', 'consequent', 'confidence', 'lift' , 'conviction', 'support'))
+Item = namedtuple("Item", ('itemset', 'support'))
 
 #Extract training datasets from file
 def get_dataset_from_file(filename):
@@ -133,7 +137,8 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
     global global_items
     
     for item in items:
-        global_items.append((item, get_support(dataset, item)))
+        item_namedtuple = Item(item, get_support(dataset, item))
+        global_items.append(item_namedtuple)
         if len(item) > 0:
             for label in set(classes):
                 count = get_classwise_count(dataset, classes, item)[label]
@@ -148,26 +153,30 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
                     lift = 1
                     conviction = 1
                 if confidence >= confidence_threshold and support >= support_threshold and lift > 1:
-                    global_rules.append((tuple(item), label, confidence, lift, conviction))
+                    rule = Rule(tuple(item), label, confidence, lift, conviction, support)
+                    global_rules.append(rule)
+                    #global_rules.append((tuple(item), label, confidence, lift, conviction, support))
     global_rules = list(set(global_rules))
 
 #Returns True if data is a superset of antecedent of rule,
 #and label is the consequent of rule
 #if label is None, then only data is checked
 def match_rule_data(data, rule, label):
-    if set(rule[0]).issubset(set(data)) and (label == rule[1] or label is None):
+    if set(rule.antecedent).issubset(set(data)) and (label == rule.consequent or label is None):
         return True
     else:
         return False
 
 #calculates the default class
 #Dataset for which no rule matches will be classified using the default rule
-def get_default_class(dataset, classes):
+def get_default_class(dataset, classes, rule_filter = None):
     global global_rules
     c = dict.fromkeys(set(classes), 0)
     for i,data in enumerate(dataset):
         is_match = False
         for rule in global_rules:
+            if (rule_filter is not None) and (rule_filter(rule) is False):
+                continue
             if match_rule_data(data, rule, classes[i]):
                 is_match = True
                 break
@@ -192,11 +201,14 @@ def prune_rules(dataset, classes, coverage_threshold):
     return pruned_rules
                 
 def get_score(rule):
-    return rule[2]
+    return rule.confidence
 
-def classify(default_class, input_data, top_k_rules):
+#rule_filter is a arbitrary function used to filter out unwanted rules
+def classify(default_class, input_data, top_k_rules, rule_filter):
     matching_rules = []
     for rule in global_rules:
+        if (rule_filter is not None) and (rule_filter(rule) is False):
+            continue
         if match_rule_data(input_data, rule, None):
            matching_rules.append(rule)
         if len(matching_rules) == top_k_rules:
@@ -204,11 +216,24 @@ def classify(default_class, input_data, top_k_rules):
     if len(matching_rules) > 0:
         score = dict()
         for rule in matching_rules:
-            score[rule[1]] = score.get(rule[1], 0) + get_score(rule)
+            score[rule.consequent] = score.get(rule.consequent, 0) + get_score(rule)
         return max(score.items(), key=itemgetter(1))[0]
     else:
         return default_class
 
+def get_dataset_and_classes(file_name_itemset, file_name_classes):
+    try:
+        #Get dataset from file
+        dataset = get_dataset_from_file('Itemset_train.txt')
+
+        #Get training classes from file
+        classes = get_classes_from_file('Classes_train.txt')
+        return dataset, classes
+    except(FileNotFoundError):
+        return
+        print("\nUnable to open Training Dataset")
+        sys.exit(0)
+        
 def learn(support_threshold, confidence_threshold, coverage_threshold):
     global global_rules
     global global_items
@@ -229,9 +254,11 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
     items = get_initial_items(dataset)
     
     #Calculate confidence, lift and support for items
+    itemset_size = 1
     while len(items) > 0:
         items = prune_items(dataset, items, support_threshold)
-        print(len(items))
+        print("Generating rules from {} Itemsets of size {}".format(len(items), itemset_size))
+        itemset_size += 1
         run(dataset, classes, items, confidence_threshold, support_threshold)
         items = generate_new_items(items)
 
@@ -239,7 +266,8 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
     global_rules = prune_rules(dataset, classes, coverage_threshold)
     return get_default_class(dataset, classes)
 
-def test(default_class, top_k_rules):
+#rule_filter is a arbitrary function used to filter out unwanted rules
+def test(default_class, top_k_rules, rule_filter = None, **kwargs):
     global global_rules
     try:
         test_dataset = get_dataset_from_file('Itemset_test.txt')
@@ -250,20 +278,23 @@ def test(default_class, top_k_rules):
         
     correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    print("\nINCORRECTLY LABELLED ITEMSETS\n")
-    print("-"*165)
-    print("{!s:130} \t| {:^10} \t| {:^10}|".format("Itemset", "Expected", "Output"))
-    print("-"*165)
+    if kwargs.get('verbose', False) is True:
+        print("\nINCORRECTLY LABELLED ITEMSETS\n")
+        print("-"*165)
+        print("{!s:130} \t| {:^10} \t| {:^10}|".format("Itemset", "Expected", "Output"))
+        print("-"*165)
     for i,test_data in enumerate(test_dataset):
-        c = classify(default_class, test_data, top_k_rules)
+        c = classify(default_class, test_data, top_k_rules, rule_filter)
         if(c == test_classes[i]):
             correct_output_counter += 1
         else:
             incorrect_output_counter += 1
-            print("{!s:130} \t| {:^10} \t| {:^10}|".format(", ".join(test_data), test_classes[i], c))
-    print("-"*165)
-    print("\nClassified {} Inputs".format(len(test_dataset)))
-    print("Correctly Classified {} Inputs".format(correct_output_counter))
+            if kwargs.get('verbose', False) is True:
+                print("{!s:130} \t| {:^10} \t| {:^10}|".format(", ".join(test_data), test_classes[i], c))
+    if kwargs.get('verbose', False) is True:
+        print("-"*165)
+        print("\nClassified {} Inputs".format(len(test_dataset)))
+        print("Correctly Classified {} Inputs".format(correct_output_counter))
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
@@ -271,8 +302,8 @@ def display_items():
     print("-"*165)
     print("{!s:^80} \t| {:^15}|".format("Itemset","Support"))
     print("-"*165)
-    for i in global_items:
-        print("{!s:<80} \t| {:^15}|".format(", ".join(i[0]),i[1]))
+    for item in global_items:
+        print("{!s:<80} \t| {:^15}|".format(", ".join(item.itemset),item.support))
     print("-"*165)
 
 def display_rules():
@@ -280,8 +311,8 @@ def display_rules():
     print("-"*165)
     print("{!s:^80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format("Antecedent","Consequent","Confidence","Lift","Conviction"))
     print("-"*165)
-    for i in global_rules:
-        print("{!s:<80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format(", ".join(i[0]), i[1], i[2], i[3], i[4]))
+    for rule in global_rules:
+        print("{!s:<80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format(", ".join(rule.antecedent), rule.consequent, rule.confidence, rule.lift, rule.conviction))
     print("-"*165)
 
 
@@ -297,6 +328,7 @@ def main():
     print("Confidence Threshold is " + str(confidence_threshold))
     print("Coverage Threshold is " + str(coverage_threshold))
     print("top_k_rules is " + str(top_k_rules))
+    print()
 
     default_class = learn(support_threshold, confidence_threshold, coverage_threshold)
 
@@ -309,7 +341,7 @@ def main():
 
     display_rules()
 
-    print("\n\nOverall Accuracy: {}%".format(test(default_class, top_k_rules)))
+    print("\n\nOverall Accuracy: {}%".format(test(default_class, top_k_rules, verbose = True)))
 
 if __name__ == '__main__':
     main()
