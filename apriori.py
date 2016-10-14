@@ -29,7 +29,8 @@ def get_classes_from_file(filename):
     return classes
 
 #Get all the Item Values present in the dataset
-def get_initial_items(dataset):
+def get_initial_items(dataset, **kwargs):
+    progress_mgr.allow_to_print(kwargs['publish_progress'])
     l = []
     progress_mgr.begin()
     items = set(chain(*dataset))
@@ -122,11 +123,13 @@ def should_join_candidate(l1, l2):
     return True
 
 #generates k+1 sized itemsets from k sized itemsets
-def generate_new_items(items):
+def generate_new_items(items, **kwargs):
     new_items = []
 
+    progress_mgr.allow_to_print(kwargs['publish_progress'])
     progress_mgr.begin()
     items_length = len(items)
+    
     for i in range(items_length):
         for j in range(i, items_length):
             
@@ -139,8 +142,9 @@ def generate_new_items(items):
     return new_items
 
 #To remove itemsets having support less than support Threshold
-def prune_items(dataset, items, support_threshold):
-    
+def prune_items(dataset, items, support_threshold, **kwargs):
+
+    progress_mgr.allow_to_print(kwargs['publish_progress'])
     progress_mgr.begin()
     
     to_be_pruned = []
@@ -172,11 +176,12 @@ def prune_items(dataset, items, support_threshold):
 def get_subsets(arr):
     return chain(*[combinations(arr, i+1) for i in range(len(arr))])
 
-def run(dataset, classes, items, confidence_threshold, support_threshold):
+def run(dataset, classes, items, confidence_threshold, support_threshold, **kwargs):
     global global_rules
     global global_items
 
     items_length = len(items)
+    progress_mgr.allow_to_print(kwargs['publish_progress'])
     progress_mgr.begin()
     
     for index, item in enumerate(items):
@@ -233,11 +238,12 @@ def get_default_class(dataset, classes, rule_filter = None):
             c[classes[i]] += 1
     return max(c.items(), key=itemgetter(1))[0]
     
-def prune_rules(dataset, classes, coverage_threshold):
+def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     global global_rules
     pruned_rules = []
     data_count = [0]*len(dataset)
 
+    progress_mgr.allow_to_print(kwargs['publish_progress'])
     progress_mgr.begin()
     global_rules_length = len(global_rules)
     dataset_length = len(dataset)
@@ -282,6 +288,10 @@ def classify(default_class, input_data, top_k_rules, rule_filter):
     else:
         return default_class
 
+def print_if_verbose(verbose, *args, **kwargs):
+    if verbose:
+        print(*args, **kwargs)
+
 def get_dataset_and_classes(file_name_itemset, file_name_classes):
     try:
         #Get dataset from file
@@ -295,7 +305,7 @@ def get_dataset_and_classes(file_name_itemset, file_name_classes):
         print("\nUnable to open Training Dataset")
         sys.exit(0)
         
-def learn(support_threshold, confidence_threshold, coverage_threshold):
+def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs):
     global global_rules
     global global_items
     
@@ -311,31 +321,33 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
         print("\nUnable to open Training Dataset")
         sys.exit(0)
 
+    verbose = kwargs.get('verbose', False)
+
     #Get items present in dataset
-    print("Finding candidate Itemsets of size 1")
-    items = get_initial_items(dataset)
-    print("Found {} candidate Itemsets".format(len(items)))
+    print_if_verbose(verbose, "Finding candidate Itemsets of size 1")
+    items = get_initial_items(dataset, publish_progress = verbose)
+    print_if_verbose(verbose, "Found {} candidate Itemsets".format(len(items)))
     
     #Calculate confidence, lift and support for items
     itemset_size = 1
     while len(items) > 0:
-        print("Finding frequent Itemsets from candidates")
-        items = prune_items(dataset, items, support_threshold)
-        print("Found {} frequent Itemsets".format(len(items)))
-        print("Generating rules from those Itemsets")
+        print_if_verbose(verbose, "Finding frequent Itemsets from candidates")
+        items = prune_items(dataset, items, support_threshold, publish_progress = verbose)
+        print_if_verbose(verbose, "Found {} frequent Itemsets".format(len(items)))
+        print_if_verbose(verbose, "Generating rules from those Itemsets")
         itemset_size += 1
-        run(dataset, classes, items, confidence_threshold, support_threshold)
-        print("\nFinding candidate Itemsets of size {}".format(itemset_size))
-        items = generate_new_items(items)
-        print("Found {} candidate Itemsets".format(len(items)))
+        run(dataset, classes, items, confidence_threshold, support_threshold, publish_progress = verbose)
+        print_if_verbose(verbose, "\nFinding candidate Itemsets of size {}".format(itemset_size))
+        items = generate_new_items(items, publish_progress = verbose)
+        print_if_verbose(verbose, "Found {} candidate Itemsets".format(len(items)))
 
-    print("\nRule Generation complete")
-    print("Total {} rules generated".format(len(global_rules)))
+    print_if_verbose(verbose, "\nRule Generation complete")
+    print_if_verbose(verbose, "Total {} rules generated".format(len(global_rules)))
 
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    print("\nPruning rules based on coverage_threshold")
-    global_rules = prune_rules(dataset, classes, coverage_threshold)
-    print("{} rules left after pruning".format(len(global_rules)))
+    print_if_verbose(verbose, "\nPruning rules based on coverage_threshold")
+    global_rules = prune_rules(dataset, classes, coverage_threshold, publish_progress = verbose)
+    print_if_verbose(verbose, "{} rules left after pruning".format(len(global_rules)))
     return get_default_class(dataset, classes)
 
 #rule_filter is a arbitrary function used to filter out unwanted rules
@@ -391,7 +403,7 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.2
+    support_threshold = 0.3
     confidence_threshold = 0.2
     coverage_threshold = 10
     top_k_rules = 25
@@ -402,14 +414,14 @@ def main():
     print("top_k_rules is " + str(top_k_rules))
     print()
 
-    default_class = learn(support_threshold, confidence_threshold, coverage_threshold)
+    default_class = learn(support_threshold, confidence_threshold, coverage_threshold, verbose = True)
 
     print("\n\nFREQUENT ITEMSETS\n")
     
     #Printing itemsets with support greater than support threshold
     display_items()
         
-    print("\n\nRULES LEFT AFTER PRUNING\n")
+    print("\n\nRULES INFERENCED FROM DATA\n")
 
     display_rules()
 
