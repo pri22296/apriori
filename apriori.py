@@ -3,12 +3,14 @@ from operator import itemgetter
 from collections import namedtuple
 import sys
 import math
+from progress_manager import ProgressManager
 
 global_items = []
 global_rules = []
 
 Rule = namedtuple("Rule", ('antecedent', 'consequent', 'confidence', 'lift' , 'conviction', 'support'))
 Item = namedtuple("Item", ('itemset', 'support'))
+progress_mgr = ProgressManager(30, '.')
 
 #Extract training datasets from file
 def get_dataset_from_file(filename):
@@ -29,12 +31,28 @@ def get_classes_from_file(filename):
 #Get all the Item Values present in the dataset
 def get_initial_items(dataset):
     l = []
-    for item in set(chain(*dataset)):
+    progress_mgr.begin()
+    items = set(chain(*dataset))
+    items_length = len(items)
+    
+    for index, item in enumerate(items):
+        
+        progress_percent = ((index + 1) / items_length) * 100
+        progress_mgr.publish(progress_percent)
+        
         l.append([item])
+        
+    progress_mgr.end()
     return sorted(l)
 
 #Returns the count of items in the dataset irrespective of the class
 def get_count(dataset, items):
+    
+    for global_item in global_items:
+        if(len(global_item.itemset) == len(items)):
+            if(len(set(items).intersection(set(global_item.itemset))) == len(global_item.itemset)):
+                return int(round(global_item.support * len(dataset), 0))
+            
     count = 0
     for data in dataset:
         found = True
@@ -68,10 +86,6 @@ def get_classwise_count(dataset, classes, items):
     return count_class
 
 def get_support(dataset, items):
-    for global_item in global_items:
-        if(len(global_item[0]) == len(items)):
-            if(len(set(items).intersection(set(global_item[0]))) == len(global_item[0])):
-                return global_item[1]
     return round(get_count(dataset, items)/len(dataset), 3)
 
 def new_get_support(dataset, classes, items, label):
@@ -110,18 +124,44 @@ def should_join_candidate(l1, l2):
 #generates k+1 sized itemsets from k sized itemsets
 def generate_new_items(items):
     new_items = []
-    for i in range(len(items)):
-        for j in range(i,len(items)):
+
+    progress_mgr.begin()
+    items_length = len(items)
+    for i in range(items_length):
+        for j in range(i, items_length):
+            
+            progress_percent = 100 * ((i + 1) * items_length + (j + 1)) / (items_length * (items_length + 1))
+            progress_mgr.publish(progress_percent)
+            
             if should_join_candidate(items[i], items[j]):
                 new_items.append(sorted(list(set(items[i]).union(set(items[j])))))
+    progress_mgr.end()
     return new_items
 
 #To remove itemsets having support less than support Threshold
 def prune_items(dataset, items, support_threshold):
+    
+    progress_mgr.begin()
+    
     to_be_pruned = []
-    for item in items:
-        if get_count(dataset, item) < len(dataset)*support_threshold:
+    items_length = len(items)
+    
+    for index, item in enumerate(items):
+        progress_percent = ((index + 1) / items_length) * 100
+        progress_mgr.publish(progress_percent)
+
+        item_support = round(get_count(dataset, item) / len(dataset), 3)
+        
+        if item_support < support_threshold:
             to_be_pruned.append(item)
+        else:
+            item_namedtuple = Item(item, item_support)
+            global_items.append(item_namedtuple)
+        #if get_count(dataset, item) < len(dataset)*support_threshold:
+            #to_be_pruned.append(item)
+
+    progress_mgr.end()
+    
     for item in to_be_pruned:
         items.remove(item)
     return items
@@ -135,10 +175,18 @@ def get_subsets(arr):
 def run(dataset, classes, items, confidence_threshold, support_threshold):
     global global_rules
     global global_items
+
+    items_length = len(items)
+    progress_mgr.begin()
     
-    for item in items:
-        item_namedtuple = Item(item, get_support(dataset, item))
-        global_items.append(item_namedtuple)
+    for index, item in enumerate(items):
+        
+        #item_namedtuple = Item(item, get_support(dataset, item))
+        #global_items.append(item_namedtuple)
+        
+        progress_percent = ((index + 1)/ items_length) * 100
+        progress_mgr.publish(progress_percent)
+            
         if len(item) > 0:
             for label in set(classes):
                 count = get_classwise_count(dataset, classes, item)[label]
@@ -156,6 +204,7 @@ def run(dataset, classes, items, confidence_threshold, support_threshold):
                     rule = Rule(tuple(item), label, confidence, lift, conviction, support)
                     global_rules.append(rule)
                     #global_rules.append((tuple(item), label, confidence, lift, conviction, support))
+    progress_mgr.end()
     global_rules = list(set(global_rules))
 
 #Returns True if data is a superset of antecedent of rule,
@@ -188,9 +237,18 @@ def prune_rules(dataset, classes, coverage_threshold):
     global global_rules
     pruned_rules = []
     data_count = [0]*len(dataset)
-    for rule in global_rules:
+
+    progress_mgr.begin()
+    global_rules_length = len(global_rules)
+    dataset_length = len(dataset)
+    
+    for rule_index, rule in enumerate(global_rules):
         rule_add = False
         for i,data in enumerate(dataset):
+
+            progress_percent = ((rule_index + 1) * (i + 1)) / (global_rules_length * dataset_length) * 100
+            progress_mgr.publish(progress_percent)
+            
             if match_rule_data(data, rule, classes[i]) and data_count[i]>=0:
                 rule_add = True
                 data_count[i] += 1
@@ -198,6 +256,9 @@ def prune_rules(dataset, classes, coverage_threshold):
                     data_count[i] = -1
         if rule_add:
             pruned_rules.append(rule)
+
+    progress_mgr.end()
+    
     return pruned_rules
                 
 def get_score(rule):
@@ -251,19 +312,30 @@ def learn(support_threshold, confidence_threshold, coverage_threshold):
         sys.exit(0)
 
     #Get items present in dataset
+    print("Finding candidate Itemsets of size 1")
     items = get_initial_items(dataset)
+    print("Found {} candidate Itemsets".format(len(items)))
     
     #Calculate confidence, lift and support for items
     itemset_size = 1
     while len(items) > 0:
+        print("Finding frequent Itemsets from candidates")
         items = prune_items(dataset, items, support_threshold)
-        print("Generating rules from {} Itemsets of size {}".format(len(items), itemset_size))
+        print("Found {} frequent Itemsets".format(len(items)))
+        print("Generating rules from those Itemsets")
         itemset_size += 1
         run(dataset, classes, items, confidence_threshold, support_threshold)
+        print("\nFinding candidate Itemsets of size {}".format(itemset_size))
         items = generate_new_items(items)
+        print("Found {} candidate Itemsets".format(len(items)))
+
+    print("\nRule Generation complete")
+    print("Total {} rules generated".format(len(global_rules)))
 
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
+    print("\nPruning rules based on coverage_threshold")
     global_rules = prune_rules(dataset, classes, coverage_threshold)
+    print("{} rules left after pruning".format(len(global_rules)))
     return get_default_class(dataset, classes)
 
 #rule_filter is a arbitrary function used to filter out unwanted rules
@@ -321,7 +393,7 @@ def main():
 
     support_threshold = 0.2
     confidence_threshold = 0.2
-    coverage_threshold = 5
+    coverage_threshold = 10
     top_k_rules = 25
     
     print("Support Threshold is " + str(support_threshold))
