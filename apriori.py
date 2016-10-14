@@ -30,7 +30,7 @@ def get_classes_from_file(filename):
 
 #Get all the Item Values present in the dataset
 def get_initial_items(dataset, **kwargs):
-    progress_mgr.allow_to_print(kwargs['publish_progress'])
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     l = []
     progress_mgr.begin()
     items = set(chain(*dataset))
@@ -126,7 +126,7 @@ def should_join_candidate(l1, l2):
 def generate_new_items(items, **kwargs):
     new_items = []
 
-    progress_mgr.allow_to_print(kwargs['publish_progress'])
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     items_length = len(items)
     
@@ -144,7 +144,7 @@ def generate_new_items(items, **kwargs):
 #To remove itemsets having support less than support Threshold
 def prune_items(dataset, items, support_threshold, **kwargs):
 
-    progress_mgr.allow_to_print(kwargs['publish_progress'])
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     
     to_be_pruned = []
@@ -181,7 +181,7 @@ def run(dataset, classes, items, confidence_threshold, support_threshold, **kwar
     global global_items
 
     items_length = len(items)
-    progress_mgr.allow_to_print(kwargs['publish_progress'])
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     
     for index, item in enumerate(items):
@@ -243,7 +243,7 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     pruned_rules = []
     data_count = [0]*len(dataset)
 
-    progress_mgr.allow_to_print(kwargs['publish_progress'])
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     global_rules_length = len(global_rules)
     dataset_length = len(dataset)
@@ -291,19 +291,6 @@ def classify(default_class, input_data, top_k_rules, rule_filter):
 def print_if_verbose(verbose, *args, **kwargs):
     if verbose:
         print(*args, **kwargs)
-
-def get_dataset_and_classes(file_name_itemset, file_name_classes):
-    try:
-        #Get dataset from file
-        dataset = get_dataset_from_file('Itemset_train.txt')
-
-        #Get training classes from file
-        classes = get_classes_from_file('Classes_train.txt')
-        return dataset, classes
-    except(FileNotFoundError):
-        return
-        print("\nUnable to open Training Dataset")
-        sys.exit(0)
         
 def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs):
     global global_rules

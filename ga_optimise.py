@@ -70,7 +70,9 @@ def my_rule_filter(rule):
 
 def evalAccuracy(individual):
     my_rule_filter.individual = individual
-    dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
+    dataset = apriori.get_dataset_from_file('Itemset_train.txt')
+    classes = apriori.get_classes_from_file('Classes_train.txt')
+    #dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
     default_class = apriori.get_default_class(dataset, classes, my_rule_filter)
     accuracy = apriori.test(default_class, DEFAULT_TOP_K_RULES, my_rule_filter)
     return accuracy,
