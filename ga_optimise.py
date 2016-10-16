@@ -13,13 +13,13 @@ MAX_ITEM = 50
 MAX_WEIGHT = 50
 NBR_ITEMS = 20
 
-MIN_SUPPORT_THRESHOLD = 0.1
-MAX_SUPPORT_THRESHOLD = 0.4
+MIN_SUPPORT_THRESHOLD = 0.2
+MAX_SUPPORT_THRESHOLD = 0.6
 MIN_CONF_THRESHOLD = 0.1
 MAX_CONF_THRESHOLD = 0.9
 
-DEFAULT_COVERAGE_THRESHOLD = 5
-DEFAULT_TOP_K_RULES = 25
+DEFAULT_COVERAGE_THRESHOLD = 10
+DEFAULT_TOP_K_RULES = 50
 
 # To assure reproductibility, the RNG seed is set prior to the items
 # dict initialization. It is also seeded in main().
@@ -61,20 +61,15 @@ def evalKnapsack(individual):
         return 10000, 0             # Ensure overweighted bags are dominated
     return weight, value
 
-def my_rule_filter(rule):
-    if rule.support >= my_rule_filter.individual[0]:
-        return True
-    if rule.confidence >= my_rule_filter.individual[1]:
-        return True
-    return False
-
 def evalAccuracy(individual):
-    my_rule_filter.individual = individual
     dataset = apriori.get_dataset_from_file('Itemset_train.txt')
     classes = apriori.get_classes_from_file('Classes_train.txt')
+    
+    support_threshold = individual[0]
+    confidence_threshold = individual[1]
     #dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
-    default_class = apriori.get_default_class(dataset, classes, my_rule_filter)
-    accuracy = apriori.test(default_class, DEFAULT_TOP_K_RULES, my_rule_filter)
+    default_class = apriori.get_default_class(dataset, classes, support_threshold, confidence_threshold)
+    accuracy = apriori.test(default_class, support_threshold, confidence_threshold, DEFAULT_TOP_K_RULES)
     return accuracy,
 
 def cxSet(ind1, ind2):
@@ -219,7 +214,7 @@ def main_old():
     return gen_list, avg_list, min_list, max_list
     
 def main():
-    NGEN = 30
+    NGEN = 5
     MU = 25
     LAMBDA = 25
     CXPB = 0.7
@@ -227,7 +222,9 @@ def main():
     
     random.seed(60)
 
-    apriori.learn(MIN_CONF_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD)
+    print("Beginning Initial Learning\n")
+    apriori.learn(MIN_SUPPORT_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD, verbose = True)
+    print("\n\nInitial Learning complete")
     
     pop = toolbox.population(n=MU)
     hof = tools.ParetoFront()

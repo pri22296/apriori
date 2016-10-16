@@ -22,7 +22,7 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     accuracy_list = []
     
     for sup_th in support_threshold_list:
-        accuracy = apriori.test(apriori.learn(sup_th, confidence_threshold, coverage_threshold), top_k_rules)
+        accuracy = apriori.test(apriori.learn(sup_th, confidence_threshold, coverage_threshold), sup_th, confidence_threshold, top_k_rules)
         print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
         accuracy_list.append(accuracy)
 
@@ -56,7 +56,7 @@ def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
     confidence_threshold_list = [i/20 for i in range(1,20)]
 
     for conf_th in confidence_threshold_list:
-        accuracy = apriori.test(apriori.learn(support_threshold, conf_th, coverage_threshold), top_k_rules)
+        accuracy = apriori.test(apriori.learn(support_threshold, conf_th, coverage_threshold), support_threshold, conf_th, top_k_rules)
         print("accuracy for confidence_threshold {} is {}".format(conf_th, accuracy))
         accuracy_list.append(accuracy)
 
@@ -67,7 +67,7 @@ def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    gen, avg, mini, maxi = ga_optimise.main2()
+    gen, avg, mini, maxi = ga_optimise.main()
 
     plt.plot(gen, avg, 'g',label='average')
     plt.plot(gen, mini, 'r',label='minimum')

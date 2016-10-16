@@ -21,7 +21,8 @@ def main():
     g = open('Output.txt', 'w')
 
     for line in f:
-        g.write(apriori.classify(default_class, line.strip().rstrip('\n').split(','), top_k_rules) + '\n')
+        input_data = line.strip().rstrip('\n').split(',')
+        g.write(apriori.classify(default_class, input_data, support_threshold, confidence_threshold, top_k_rules) + '\n')
 
     apriori.display_items()
     apriori.display_rules()

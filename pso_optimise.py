@@ -9,8 +9,8 @@ from deap import benchmarks
 from deap import creator
 from deap import tools
 
-MIN_SUPPORT_THRESHOLD = 0.1
-MAX_SUPPORT_THRESHOLD = 0.4
+MIN_SUPPORT_THRESHOLD = 0.2
+MAX_SUPPORT_THRESHOLD = 0.6
 MIN_CONF_THRESHOLD = 0.1
 MAX_CONF_THRESHOLD = 0.9
 
@@ -28,20 +28,14 @@ def clamp(value, minimum, maximum):
         return maximum
     return value
 
-def my_rule_filter(rule):
-    if rule.support >= my_rule_filter.particle[0]:
-        return True
-    if rule.confidence >= my_rule_filter.particle[1]:
-        return True
-    return False
-
 def evalAccuracy(particle):
-    my_rule_filter.particle = particle
     dataset = apriori.get_dataset_from_file('Itemset_train.txt')
     classes = apriori.get_classes_from_file('Classes_train.txt')
-    #dataset, classes = apriori.get_dataset_and_classes("Itemset_train.txt", "Classes_train.txt")
-    default_class = apriori.get_default_class(dataset, classes, my_rule_filter)
-    accuracy = apriori.test(default_class, DEFAULT_TOP_K_RULES, my_rule_filter)
+    
+    support_threshold = particle[0]
+    confidence_threshold = particle[1]
+    default_class = apriori.get_default_class(dataset, classes, support_threshold, confidence_threshold)
+    accuracy = apriori.test(default_class, support_threshold, confidence_threshold, DEFAULT_TOP_K_RULES)
     return accuracy,
 
 def generate(size, pmin, pmax, smin, smax):

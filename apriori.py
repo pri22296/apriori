@@ -4,9 +4,10 @@ from collections import namedtuple
 import sys
 import math
 from progress_manager import ProgressManager
+from printer_tools import BufferedPrinter, TablePrinter
 
 #dict containing Itemsets as keys and their
-#count as values
+#classwise counts as values
 global_items = {}
 
 #List of Rules where each rule is a namedtuple
@@ -60,14 +61,11 @@ def get_initial_items(dataset, **kwargs):
 
 #Returns the count of items in the dataset irrespective of the class
 def get_count(dataset, items):
-    
-    """for global_item in global_items:
-        if(len(global_item.itemset) == len(items)):
-            if(len(set(items).intersection(set(global_item.itemset))) == len(global_item.itemset)):
-                return int(round(global_item.support * len(dataset), 0))"""
 
     try:
-        return global_items[tuple(set(items))]
+        classwise_count = global_items[tuple(set(items))]
+        return get_itemcount_from_classwise_count(classwise_count)
+        #return global_items[tuple(set(items))]
     except KeyError:
         pass
             
@@ -158,8 +156,14 @@ def generate_new_items(items, **kwargs):
     progress_mgr.end()
     return new_items
 
+def get_itemcount_from_classwise_count(classwise_count):
+    net_itemcount = 0
+    for itemcount, class_count in classwise_count.values():
+        net_itemcount += itemcount
+    return net_itemcount
+
 #To remove itemsets having support less than support Threshold
-def prune_items(dataset, items, support_threshold, **kwargs):
+def prune_items(dataset, classes, items, support_threshold, **kwargs):
 
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
@@ -171,17 +175,19 @@ def prune_items(dataset, items, support_threshold, **kwargs):
         progress_percent = ((index + 1) / items_length) * 100
         progress_mgr.publish(progress_percent)
 
-        item_count = get_count(dataset, item)
+        classwise_count = get_classwise_count(dataset, classes, item)
+        item_count = get_itemcount_from_classwise_count(classwise_count)
+        #item_count = get_count(dataset, item)
         item_support = round(item_count / len(dataset), 3)
         
         if item_support < support_threshold:
             to_be_pruned.append(item)
         else:
-            global_items[tuple(set(item))] = item_count
+            global_items[tuple(set(item))] = classwise_count
+            #global_items[tuple(set(item))] = item_count
+            
             #item_namedtuple = Item(item, item_support)
             #global_items.append(item_namedtuple)
-        #if get_count(dataset, item) < len(dataset)*support_threshold:
-            #to_be_pruned.append(item)
 
     progress_mgr.end()
     
@@ -212,10 +218,13 @@ def run(dataset, classes, items, confidence_threshold, support_threshold, **kwar
         progress_mgr.publish(progress_percent)
             
         if len(item) > 0:
+            classwise_count = global_items[tuple(set(item))]
+            item_count = get_itemcount_from_classwise_count(classwise_count)
             for label in set(classes):
-                count = get_classwise_count(dataset, classes, item)[label]
-                support = round(count[0]/len(dataset), 3)
-                item_count = get_count(dataset, item)
+                count = classwise_count[label]
+                #count = get_classwise_count(dataset, classes, item)[label]
+                rule_support = round(count[0]/len(dataset), 3)
+                #item_count = get_count(dataset, item)
                 item_support = round(item_count/len(dataset), 3)
                 try:
                     confidence = round(count[0]/item_count, 3)
@@ -229,7 +238,7 @@ def run(dataset, classes, items, confidence_threshold, support_threshold, **kwar
                 if confidence >= confidence_threshold:
                     rule = Rule(tuple(item), label, confidence, lift, conviction, item_support)
                     global_rules.append(rule)
-                    #global_rules.append((tuple(item), label, confidence, lift, conviction, support))
+                    #global_rules.append((tuple(item), label, confidence, lift, conviction, item_support))
     progress_mgr.end()
     global_rules = list(set(global_rules))
 
@@ -244,23 +253,38 @@ def match_rule_data(data, rule, label):
 
 #calculates the default class
 #Dataset for which no rule matches will be classified using the default rule
-def get_default_class(dataset, classes, rule_filter = None):
+def get_default_class(dataset, classes, support_threshold, confidence_threshold, **kwargs):
     global global_rules
+
+    progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
+    progress_mgr.begin()
+
+    dataset_length = len(dataset)
+    global_rules_length = len(global_rules)
+    
     c = dict.fromkeys(set(classes), 0)
-    for i,data in enumerate(dataset):
+    for i, data in enumerate(dataset):
         is_match = False
-        for rule in global_rules:
-            if (rule_filter is not None) and (rule_filter(rule) is False):
+        for j, rule in enumerate(global_rules):
+
+            progress_percent = 100 * (i * global_rules_length + (j + 1)) / (dataset_length * global_rules_length) 
+            progress_mgr.publish(progress_percent)
+            
+            if rule.support < support_threshold or rule.confidence < confidence_threshold:
                 continue
             if match_rule_data(data, rule, classes[i]):
                 is_match = True
                 break
         if is_match is False:
             c[classes[i]] += 1
+            
+    progress_mgr.end()
+    
     return max(c.items(), key=itemgetter(1))[0]
     
 def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     global global_rules
+    global global_items
     pruned_rules = []
     data_count = [0]*len(dataset)
 
@@ -272,11 +296,10 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     for rule_index, rule in enumerate(global_rules):
         rule_add = False
         for i,data in enumerate(dataset):
-
-            progress_percent = ((rule_index + 1) * (i + 1)) / (global_rules_length * dataset_length) * 100
+            progress_percent = 100 * (rule_index * dataset_length + (i + 1)) / (global_rules_length * dataset_length)
             progress_mgr.publish(progress_percent)
             
-            if match_rule_data(data, rule, classes[i]) and data_count[i]>=0:
+            if match_rule_data(data, rule, classes[i]) and data_count[i] >= 0:
                 rule_add = True
                 data_count[i] += 1
                 if data_count[i] >= coverage_threshold:
@@ -291,11 +314,10 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
 def get_score(rule):
     return rule.lift
 
-#rule_filter is a arbitrary function used to filter out unwanted rules
-def classify(default_class, input_data, top_k_rules, rule_filter):
+def classify(default_class, input_data, support_threshold, confidence_threshold, top_k_rules):
     matching_rules = []
     for rule in global_rules:
-        if (rule_filter is not None) and (rule_filter(rule) is False):
+        if rule.support < support_threshold or rule.confidence < confidence_threshold:
             continue
         if match_rule_data(input_data, rule, None):
            matching_rules.append(rule)
@@ -315,10 +337,8 @@ def print_if_verbose(verbose, *args, **kwargs):
         
 def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs):
     global global_rules
-    global global_items
-    
     global_rules = []
-    #global_items = {}
+    
     try:
         #Get dataset from file
         dataset = get_dataset_from_file('Itemset_train.txt')
@@ -339,12 +359,15 @@ def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs)
     #Calculate confidence, lift and support for items
     itemset_size = 1
     while len(items) > 0:
+        
         print_if_verbose(verbose, "Finding frequent Itemsets from candidates")
-        items = prune_items(dataset, items, support_threshold, publish_progress = verbose)
+        items = prune_items(dataset, classes, items, support_threshold, publish_progress = verbose)
         print_if_verbose(verbose, "Found {} frequent Itemsets".format(len(items)))
+        
         print_if_verbose(verbose, "Generating rules from those Itemsets")
         itemset_size += 1
         run(dataset, classes, items, confidence_threshold, support_threshold, publish_progress = verbose)
+        
         print_if_verbose(verbose, "\n\nFinding candidate Itemsets of size {}".format(itemset_size))
         items = generate_new_items(items, publish_progress = verbose)
         print_if_verbose(verbose, "Found {} candidate Itemsets".format(len(items)))
@@ -353,13 +376,17 @@ def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs)
     print_if_verbose(verbose, "Total {} rules generated".format(len(global_rules)))
 
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
-    print_if_verbose(verbose, "\nPruning rules based on coverage_threshold")
+    
+    print_if_verbose(verbose, "\n\nPruning rules based on coverage_threshold")
     global_rules = prune_rules(dataset, classes, coverage_threshold, publish_progress = verbose)
     print_if_verbose(verbose, "{} rules left after pruning".format(len(global_rules)))
-    return get_default_class(dataset, classes)
 
-#rule_filter is a arbitrary function used to filter out unwanted rules
-def test(default_class, top_k_rules, rule_filter = None, **kwargs):
+    print_if_verbose(verbose, "\n\nCalculating default class")
+    default_class = get_default_class(dataset, classes, support_threshold, confidence_threshold, publish_progress = verbose)
+    print_if_verbose(verbose, "default class is {}".format(default_class))
+    return default_class
+
+def test(default_class, support_threshold, confidence_threshold, top_k_rules, **kwargs):
     global global_rules
     try:
         test_dataset = get_dataset_from_file('Itemset_test.txt')
@@ -370,51 +397,68 @@ def test(default_class, top_k_rules, rule_filter = None, **kwargs):
         
     correct_output_counter, incorrect_output_counter = 0, 0
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
+    
     if kwargs.get('verbose', False) is True:
         print("\nINCORRECTLY LABELLED ITEMSETS\n")
-        print("-"*165)
-        print("{!s:130} \t| {:^10} \t| {:^10}|".format("Itemset", "Expected", "Output"))
-        print("-"*165)
+        
+        table_printer = TablePrinter(3)
+        table_printer.set_column_headers("Itemset", "Expected", "Output")
+        table_printer.set_column_alignments('<', '^', '^')
+        table_printer.set_column_widths(130, 15, 15)
+        table_printer.begin()
+        
     for i,test_data in enumerate(test_dataset):
-        c = classify(default_class, test_data, top_k_rules, rule_filter)
+        c = classify(default_class, test_data, support_threshold, confidence_threshold, top_k_rules)
         if(c == test_classes[i]):
             correct_output_counter += 1
         else:
             incorrect_output_counter += 1
             if kwargs.get('verbose', False) is True:
-                print("{!s:130} \t| {:^10} \t| {:^10}|".format(", ".join(test_data), test_classes[i], c))
+                table_printer.append_row(", ".join(test_data), test_classes[i], c)
+                
     if kwargs.get('verbose', False) is True:
-        print("-"*165)
+        table_printer.end()
         print("\nClassified {} Inputs".format(len(test_dataset)))
         print("Correctly Classified {} Inputs".format(correct_output_counter))
+    
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
 
 def display_items():
     global global_items
-    print("-"*165)
-    print("{!s:^80} \t| {:^15}|".format("Itemset","Support"))
-    print("-"*165)
+    
+    table_printer = TablePrinter(2)
+    table_printer.set_column_headers("Itemset", "Support")
+    table_printer.set_column_alignments('<', '^')
+    table_printer.set_column_widths(80, 15)
+    table_printer.begin()
+    
     dataset_length = len(get_dataset_from_file('Classes_train.txt'))
-    for item, count in global_items.items():
-        print("{!s:<80} \t| {:^15}|".format(", ".join(item), round(count/dataset_length, 3)))
-        #print("{!s:<80} \t| {:^15}|".format(", ".join(item.itemset),item.support))
-    print("-"*165)
+    for item, classwise_count in global_items.items():
+        itemcount = get_itemcount_from_classwise_count(classwise_count)
+        table_printer.append_row(", ".join(item), round(itemcount/dataset_length, 3))
+
+    table_printer.end()
 
 def display_rules():
     global global_rules
-    print("-"*165)
-    print("{!s:^80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format("Antecedent","Consequent","Confidence","Lift","Conviction"))
-    print("-"*165)
+
+    table_printer = TablePrinter(6)
+    table_printer.set_column_headers("Antecedent","Consequent","Confidence","Lift","Conviction","Support")
+    table_printer.set_column_alignments('<', '^', '^', '^', '^', '^')
+    table_printer.set_column_widths(80, 15, 15, 15, 15, 15)
+    table_printer.begin()
+    
     for rule in global_rules:
-        print("{!s:<80} \t| {:^15} \t| {:^10} \t| {:^10} \t| {:^10}|".format(", ".join(rule.antecedent), rule.consequent, rule.confidence, rule.lift, rule.conviction))
-    print("-"*165)
+        table_printer.append_row(", ".join(rule.antecedent), rule.consequent, rule.confidence, rule.lift, rule.conviction, rule.support)
+
+    table_printer.end()
 
 
 def main():
     global global_rules
 
-    support_threshold = 0.1
-    confidence_threshold = 0.1
+    support_threshold = 0.4
+    confidence_threshold = 0.4
     coverage_threshold = 10
     top_k_rules = 50
     
@@ -435,7 +479,7 @@ def main():
 
     display_rules()
 
-    print("\n\nOverall Accuracy: {}%".format(test(default_class, top_k_rules, verbose = True)))
+    print("\n\nOverall Accuracy: {}%".format(test(default_class, support_threshold, confidence_threshold, top_k_rules, verbose = True)))
 
 if __name__ == '__main__':
     main()
