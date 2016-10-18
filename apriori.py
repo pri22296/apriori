@@ -64,7 +64,6 @@ def get_count(dataset, items):
     try:
         classwise_count = global_items[tuple(set(items))]
         return get_itemcount_from_classwise_count(classwise_count)
-        #return global_items[tuple(set(items))]
     except KeyError:
         pass
             
