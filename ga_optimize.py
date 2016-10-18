@@ -13,7 +13,7 @@ MAX_ITEM = 50
 MAX_WEIGHT = 50
 NBR_ITEMS = 20
 
-MIN_SUPPORT_THRESHOLD = 0.2
+MIN_SUPPORT_THRESHOLD = 0.1
 MAX_SUPPORT_THRESHOLD = 0.6
 MIN_CONF_THRESHOLD = 0.1
 MAX_CONF_THRESHOLD = 0.9
@@ -214,7 +214,7 @@ def main_old():
     return gen_list, avg_list, min_list, max_list
     
 def main():
-    NGEN = 5
+    NGEN = 10
     MU = 25
     LAMBDA = 25
     CXPB = 0.7

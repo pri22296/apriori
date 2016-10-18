@@ -9,13 +9,13 @@ from deap import benchmarks
 from deap import creator
 from deap import tools
 
-MIN_SUPPORT_THRESHOLD = 0.2
+MIN_SUPPORT_THRESHOLD = 0.1
 MAX_SUPPORT_THRESHOLD = 0.6
 MIN_CONF_THRESHOLD = 0.1
 MAX_CONF_THRESHOLD = 0.9
 
-DEFAULT_COVERAGE_THRESHOLD = 5
-DEFAULT_TOP_K_RULES = 25
+DEFAULT_COVERAGE_THRESHOLD = 10
+DEFAULT_TOP_K_RULES = 50
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
@@ -74,12 +74,12 @@ def main():
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
 
-    apriori.learn(MIN_SUPPORT_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD)
+    apriori.learn(MIN_SUPPORT_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD, verbose = True)
 
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    GEN = 20
+    GEN = 10
     best = None
 
     random.seed(60)
@@ -99,6 +99,8 @@ def main():
         # Gather all the fitnesses in one list and print the stats
         logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
         print(logbook.stream)
+
+    print("Best individual is %s, %s" % (best, best.fitness.values))
 
     return logbook.select("gen", "avg", "min", "max")
     #return pop, logbook, best
