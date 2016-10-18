@@ -358,7 +358,10 @@ def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs)
         
         print_if_verbose(verbose, "Generating rules from those Itemsets")
         itemset_size += 1
+        prev_rule_len = len(global_rules)
         generate_rules(dataset, classes, items, confidence_threshold, support_threshold, publish_progress = verbose)
+        rule_gen_count = len(global_rules) - prev_rule_len
+        print_if_verbose(verbose, "{} rule(s) generated".format(rule_gen_count))
         
         print_if_verbose(verbose, "\n\nFinding candidate Itemsets of size {}".format(itemset_size))
         items = generate_new_items(items, publish_progress = verbose)
@@ -398,7 +401,7 @@ def test(default_class, support_threshold, confidence_threshold, top_k_rules, **
         table_printer = TablePrinter(3)
         table_printer.set_column_headers("Itemset", "Expected", "Output")
         table_printer.set_column_alignments('<', '^', '^')
-        table_printer.set_column_widths(130, 15, 15)
+        table_printer.set_column_widths(120, 10, 10)
         table_printer.begin()
         
     for i,test_data in enumerate(test_dataset):
@@ -423,7 +426,7 @@ def display_items():
     table_printer = TablePrinter(2)
     table_printer.set_column_headers("Itemset", "Support")
     table_printer.set_column_alignments('<', '^')
-    table_printer.set_column_widths(80, 15)
+    table_printer.set_column_widths(100, 15)
     table_printer.begin()
     
     dataset_length = len(get_dataset_from_file('Classes_train.txt'))
@@ -439,7 +442,7 @@ def display_rules():
     table_printer = TablePrinter(6)
     table_printer.set_column_headers("Antecedent","Consequent","Confidence","Lift","Conviction","Support")
     table_printer.set_column_alignments('<', '^', '^', '^', '^', '^')
-    table_printer.set_column_widths(80, 15, 15, 15, 15, 15)
+    table_printer.set_column_widths(80, 10, 10, 10, 10, 10)
     table_printer.begin()
     
     for rule in global_rules:
