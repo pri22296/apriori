@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import apriori
 import time
-import ga_optimise
-import pso_optimise
+import ga_optimize
+import pso_optimize
 import DataGen
 
 def plot(xlabel, ylabel, xarray, yarray, axis):
@@ -67,7 +67,7 @@ def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    gen, avg, mini, maxi = ga_optimise.main()
+    gen, avg, mini, maxi = ga_optimize.main()
 
     plt.plot(gen, avg, 'g',label='average')
     plt.plot(gen, mini, 'r',label='minimum')
@@ -83,7 +83,7 @@ def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
 
-    gen, avg, mini, maxi = pso_optimise.main()
+    gen, avg, mini, maxi = pso_optimize.main()
 
     plt.plot(gen, avg, 'g',label='average')
     plt.plot(gen, mini, 'r',label='minimum')
