@@ -67,7 +67,7 @@ toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
 toolbox.register("evaluate", evalAccuracy)
 
 def main():
-    pop = toolbox.population(n=5)
+    pop = toolbox.population(n=25)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", numpy.mean)
     stats.register("std", numpy.std)

@@ -212,7 +212,7 @@ def main_old():
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
     
     return gen_list, avg_list, min_list, max_list
-    
+
 def main():
     NGEN = 10
     MU = 25
