@@ -15,7 +15,7 @@ global_items = {}
 global_rules = []
 
 Rule = namedtuple("Rule", ('antecedent', 'consequent', 'confidence', 'lift' , 'conviction', 'support'))
-progress_mgr = ProgressManager(60, '>')
+progress_mgr = ProgressManager(60, '*', '-')
 
 #Extract training datasets from file
 def get_dataset_from_file(filename):
@@ -344,38 +344,38 @@ def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs)
     verbose = kwargs.get('verbose', False)
 
     #Get items present in dataset
-    print_if_verbose(verbose, "Finding candidate Itemsets of size 1")
+    print_if_verbose(verbose, "\nFinding candidate Itemsets of size 1...")
     items = get_initial_items(dataset, publish_progress = verbose)
-    print_if_verbose(verbose, "Found {} candidate Itemsets".format(len(items)))
+    print_if_verbose(verbose, "{} candidate Itemset(s) found".format(len(items)))
     
     itemset_size = 1
     while len(items) > 0:
         
-        print_if_verbose(verbose, "Finding frequent Itemsets from candidates")
+        print_if_verbose(verbose, "Finding frequent Itemsets from candidates...")
         items = prune_items(dataset, classes, items, support_threshold, publish_progress = verbose)
-        print_if_verbose(verbose, "Found {} frequent Itemsets".format(len(items)))
+        print_if_verbose(verbose, "{} frequent Itemset(s) found".format(len(items)))
         
-        print_if_verbose(verbose, "Generating rules from those Itemsets")
+        print_if_verbose(verbose, "Generating rules from those Itemsets...")
         itemset_size += 1
         prev_rule_len = len(global_rules)
         generate_rules(dataset, classes, items, confidence_threshold, support_threshold, publish_progress = verbose)
         rule_gen_count = len(global_rules) - prev_rule_len
         print_if_verbose(verbose, "{} rule(s) generated".format(rule_gen_count))
         
-        print_if_verbose(verbose, "\n\nFinding candidate Itemsets of size {}".format(itemset_size))
+        print_if_verbose(verbose, "\n\nFinding candidate Itemsets of size {}...".format(itemset_size))
         items = generate_new_items(items, publish_progress = verbose)
-        print_if_verbose(verbose, "Found {} candidate Itemsets".format(len(items)))
+        print_if_verbose(verbose, "{} candidate Itemset(s) found".format(len(items)))
 
     print_if_verbose(verbose, "\n\nRule Generation complete")
     print_if_verbose(verbose, "Total {} rules generated".format(len(global_rules)))
 
     global_rules = sorted(global_rules, key=lambda rule: get_score(rule), reverse=True)
     
-    print_if_verbose(verbose, "\n\nPruning rules based on coverage_threshold")
+    print_if_verbose(verbose, "\n\nPruning rules based on coverage_threshold...")
     global_rules = prune_rules(dataset, classes, coverage_threshold, publish_progress = verbose)
-    print_if_verbose(verbose, "{} rules left after pruning".format(len(global_rules)))
+    print_if_verbose(verbose, "{} rule(s) left after pruning".format(len(global_rules)))
 
-    print_if_verbose(verbose, "\n\nCalculating default class")
+    print_if_verbose(verbose, "\n\nCalculating default class...")
     default_class = get_default_class(dataset, classes, support_threshold, confidence_threshold, publish_progress = verbose)
     print_if_verbose(verbose, "default class is {}".format(default_class))
     
@@ -388,7 +388,7 @@ def test(default_class, support_threshold, confidence_threshold, top_k_rules, **
         test_dataset = get_dataset_from_file('Itemset_test.txt')
         test_classes = get_classes_from_file('Classes_test.txt')
     except(FileNotFoundError):
-        print("\nrun DataGen.py first")
+        print("\nCannot open testing data")
         sys.exit(0)
         
     correct_output_counter, incorrect_output_counter = 0, 0
@@ -474,7 +474,7 @@ def main():
 
     display_rules()
 
-    print("\n\nOverall Accuracy: {}%".format(test(default_class, support_threshold, confidence_threshold, top_k_rules, verbose = True)))
+    print("\n\nOverall Accuracy: {}%\n".format(test(default_class, support_threshold, confidence_threshold, top_k_rules, verbose = True)))
 
 if __name__ == '__main__':
     main()
