@@ -278,7 +278,7 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     global global_rules
     global global_items
     pruned_rules = []
-    data_count = [0]*len(dataset)
+    data_cover_count = [0]*len(dataset)
 
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
@@ -291,11 +291,11 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
             progress_percent = 100 * (rule_index * dataset_length + (i + 1)) / (global_rules_length * dataset_length)
             progress_mgr.publish(progress_percent)
             
-            if match_rule_data(data, rule, classes[i]) and data_count[i] >= 0:
+            if match_rule_data(data, rule, classes[i]) and data_cover_count[i] >= 0:
                 rule_add = True
-                data_count[i] += 1
-                if data_count[i] >= coverage_threshold:
-                    data_count[i] = -1
+                data_cover_count[i] += 1
+                if data_cover_count[i] >= coverage_threshold:
+                    data_cover_count[i] = -1
         if rule_add:
             pruned_rules.append(rule)
 
