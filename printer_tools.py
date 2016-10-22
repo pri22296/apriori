@@ -47,7 +47,7 @@ class TablePrinter:
             return clamped_string
 
     def append_row(self, *args):
-        self._column_count == len(args)
+        assert self._column_count == len(args)
         row_item_list = []
         for i, row_item in enumerate(args):
             short_row_item = self._clamp_string(row_item, i)

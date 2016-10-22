@@ -3,6 +3,7 @@ import apriori
 import time
 import ga_optimize
 import pso_optimize
+from printer_tools import TablePrinter
 
 def plot(xlabel, ylabel, xarray, yarray, axis):
     plt.plot(xarray, yarray)
@@ -19,13 +20,21 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
 
     support_threshold_list = [i/10 for i in range(1,11)]
     accuracy_list = []
+
+    table_printer = TablePrinter(2)
+    table_printer.set_column_headers("Support Threshold", "Accuracy")
+    table_printer.set_column_widths(30, 30)
+
+    table_printer.begin()
     
     for sup_th in support_threshold_list:
         accuracy = apriori.test(apriori.learn(sup_th, confidence_threshold,
                                               coverage_threshold, verbose = True),
                                 sup_th, confidence_threshold, top_k_rules)
-        print("accuracy for support_threshold {} is {}".format(sup_th, accuracy))
+        table_printer.append_row(sup_th, accuracy)
         accuracy_list.append(accuracy)
+
+    table_printer.end()
 
     plot('support_threshold', 'accuracy(%)', support_threshold_list, accuracy_list, [0, 1, 0, 110])
 
@@ -37,13 +46,21 @@ def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
 
     support_threshold_list = [i/10 for i in range(1,11)]
     timetaken_list = []
+
+    table_printer = TablePrinter(2)
+    table_printer.set_column_headers("Support Threshold", "Time Taken")
+    table_printer.set_column_widths(30, 30)
+
+    table_printer.begin()
     
     for sup_th in support_threshold_list:
         t = time.time()
         apriori.learn(sup_th, confidence_threshold, coverage_threshold, verbose = True)
         time_taken = time.time() - t
-        print("time taken for support_threshold {} is {}ms".format(sup_th, round(time_taken*1000, 3)))
+        table_printer.append_row(sup_th, round(time_taken*1000, 3))
         timetaken_list.append(time_taken)
+
+    table_printer.end()
 
     plot('support_threshold', 'learning_time(seconds)', support_threshold_list, timetaken_list, [0, 1, 0, 50])
 
@@ -56,12 +73,20 @@ def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
     accuracy_list = []
     confidence_threshold_list = [i/10 for i in range(1,11)]
 
+    table_printer = TablePrinter(2)
+    table_printer.set_column_headers("Confidence Threshold", "Accuracy")
+    table_printer.set_column_widths(30, 30)
+
+    table_printer.begin()
+
     for conf_th in confidence_threshold_list:
         accuracy = apriori.test(apriori.learn(support_threshold, conf_th,
                                               coverage_threshold, verbose = True),
                                 support_threshold, conf_th, top_k_rules)
-        print("accuracy for confidence_threshold {} is {}".format(conf_th, accuracy))
+        table_printer.append_row(conf_th, accuracy)
         accuracy_list.append(accuracy)
+
+    table_printer.end()
 
     plot('confidence_threshold', 'accuracy(%)', confidence_threshold_list, accuracy_list, [0, 1, 0, 110])
 
@@ -151,12 +176,6 @@ def main():
             break
         else:
             print("Invalid Choice")
-    #accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules)
-    #timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules)
-    #accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules)
-    #accuracy_vs_ga_iteration(coverage_threshold, top_k_rules)
-    #accuracy_vs_pso_iteration(coverage_threshold, top_k_rules)
-    #timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold)
     
 
 if __name__ == "__main__":
