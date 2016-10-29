@@ -254,7 +254,7 @@ def get_default_class(dataset, classes, support_threshold, confidence_threshold,
     dataset_length = len(dataset)
     global_rules_length = len(global_rules)
     
-    c = dict.fromkeys(set(classes), 0)
+    counter = dict.fromkeys(set(classes), 0)
     for i, data in enumerate(dataset):
         is_match = False
         for j, rule in enumerate(global_rules):
@@ -268,11 +268,11 @@ def get_default_class(dataset, classes, support_threshold, confidence_threshold,
                 is_match = True
                 break
         if is_match is False:
-            c[classes[i]] += 1
+            counter[classes[i]] += 1
             
     progress_mgr.end()
     
-    return max(c.items(), key=itemgetter(1))[0]
+    return max(counter.items(), key=itemgetter(1))[0]
     
 def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     global global_rules
