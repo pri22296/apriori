@@ -453,8 +453,8 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.4
-    confidence_threshold = 0.4
+    support_threshold = 0.2
+    confidence_threshold = 0.2
     coverage_threshold = 10
     top_k_rules = 50
     
