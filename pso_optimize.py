@@ -74,7 +74,9 @@ def main():
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
 
+    print("Beginning Initial Learning\n")
     apriori.learn(MIN_SUPPORT_THRESHOLD, MIN_CONF_THRESHOLD, DEFAULT_COVERAGE_THRESHOLD, verbose = True)
+    print("\n\nInitial Learning complete")
 
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
