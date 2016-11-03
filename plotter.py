@@ -1,12 +1,21 @@
 import matplotlib.pyplot as plt
 import apriori
 import time
+import math
 import ga_optimize
 import pso_optimize
+import chi2_feature_select
 from printer_tools import TablePrinter
 
 def plot(xlabel, ylabel, xarray, yarray, axis):
     plt.plot(xarray, yarray)
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.axis(axis)
+    plt.show()
+
+def bar(xlabel, ylabel, xarray, yarray, axis):
+    plt.bar(xarray, yarray)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.axis(axis)
@@ -113,13 +122,34 @@ def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
 
     gen, avg, mini, maxi = pso_optimize.main()
 
-    plt.plot(gen, avg, 'g',label='average')
-    plt.plot(gen, mini, 'r',label='minimum')
-    plt.plot(gen, maxi, 'b',label='maximum')
+    plt.plot(gen, avg, 'g', label='average')
+    plt.plot(gen, mini, 'r', label='minimum')
+    plt.plot(gen, maxi, 'b', label='maximum')
     plt.ylabel('accuracy(%)')
     plt.xlabel('generation')
     plt.legend(loc='best')
     plt.axis([0 ,10 ,0 ,110])
+    plt.show()
+
+def chi2_stats_vs_feature():
+    print("\nPlotting chi square statistics vs Features\n")
+    
+    features, chi2_critical, chi2_stats = chi2_feature_select.main()
+    width = 0.8
+
+    chi2_critical = list(map(math.log, chi2_critical))
+    chi2_stats = list(map(math.log, chi2_stats))
+
+    x = list(range(1, 3*len(chi2_critical) + 1, 3))
+    plt.bar(x, chi2_stats, width, color = 'g', label = 'Log of chi2_stats')
+    plt.bar([p + width for p in x], chi2_critical, width, color = 'r', label = 'Log of chi2_critical')
+    plt.ylabel('Log of chi-square stats')
+    plt.xlabel('features')
+    plt.tight_layout()
+
+    plt.xticks([p + width for p in x], features)
+    plt.legend(loc='best')
+    plt.axis([0 ,50 ,0 ,10])
     plt.show()
 
 def timetaken_vs_size_of_dataset(support_threshold, confidence_threshold,coverage_threshold):
@@ -155,7 +185,8 @@ def main():
         print("3. Accuracy vs Confidence Threshold")
         print("4. Accuracy vs GA Iteration count")
         print("5. Accuracy vs PSO Iteration count")
-        print("6. Quit")
+        print("6. Chi-Square Statistics vs Features")
+        print("7. Quit")
         print("\nEnter your choice: ", end = '')
         try:
             ch = int(input())
@@ -173,6 +204,8 @@ def main():
         elif ch == 5:
             accuracy_vs_pso_iteration(coverage_threshold, top_k_rules)
         elif ch == 6:
+            chi2_stats_vs_feature()
+        elif ch == 7:
             break
         else:
             print("Invalid Choice")
