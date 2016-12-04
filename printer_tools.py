@@ -56,6 +56,7 @@ class TablePrinter:
         self._buffered_printer.print_buffered(content)
 
 class BufferedPrinter:
+    
     def __init__(self, max_buffer_size):
         self._max_buffer_size = max_buffer_size
         self.buffer = []

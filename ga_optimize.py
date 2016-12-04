@@ -241,7 +241,7 @@ def main():
     best_ind = tools.selBest(pop, 1)[0]
 
     logbook = result[1]
-    print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+    print("Best individual found using GA is %s, %s" % (best_ind, best_ind.fitness.values))
     return logbook.select("gen", "avg", "min", "max")
 
 if __name__ == "__main__":

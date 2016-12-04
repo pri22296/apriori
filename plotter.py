@@ -71,7 +71,7 @@ def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
 
     table_printer.end()
 
-    plot('support_threshold', 'learning_time(seconds)', support_threshold_list, timetaken_list, [0, 1, 0, 50])
+    plot('support_threshold', 'learning_time(seconds)', support_threshold_list, timetaken_list, [0, 1, 0, 500])
 
 def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
     print("\nPlotting accuracy vs confidence_threshold\n")
@@ -110,7 +110,7 @@ def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
     plt.plot(gen, mini, 'r',label='minimum')
     plt.plot(gen, maxi, 'b',label='maximum')
     plt.ylabel('accuracy(%)')
-    plt.xlabel('generation')
+    plt.xlabel('ga_generation')
     plt.legend(loc='best')
     plt.axis([0 ,10 ,0 ,110])
     plt.show()
@@ -126,7 +126,7 @@ def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
     plt.plot(gen, mini, 'r', label='minimum')
     plt.plot(gen, maxi, 'b', label='maximum')
     plt.ylabel('accuracy(%)')
-    plt.xlabel('generation')
+    plt.xlabel('pso_generation')
     plt.legend(loc='best')
     plt.axis([0 ,10 ,0 ,110])
     plt.show()

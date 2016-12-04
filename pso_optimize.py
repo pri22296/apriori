@@ -102,7 +102,7 @@ def main():
         logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
         print(logbook.stream)
 
-    print("Best individual is %s, %s" % (best, best.fitness.values))
+    print("Best individual found using PSO is %s, %s" % (best, best.fitness.values))
 
     return logbook.select("gen", "avg", "min", "max")
     #return pop, logbook, best

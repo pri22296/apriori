@@ -25,7 +25,6 @@ def main():
 
     for i, feature_options in enumerate(feature_options_list):
         degree = (len(feature_options) - 1) * (len(classes_list) - 1)
-        #print(feature_options)
         chi2_stats = 0
         for feature_option in feature_options:
             classwise_count = apriori.get_classwise_count(dataset, classes, [feature_option])
@@ -35,6 +34,7 @@ def main():
 
             #item_count is the count of 'item' in the specific class
             #class_count is the count of the specific class
+
             for item_count, class_count in classwise_count_list:
                 expected = class_count * feature_option_count / len(dataset)
                 observed = item_count

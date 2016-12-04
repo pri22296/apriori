@@ -19,18 +19,18 @@ progress_mgr = ProgressManager(60, '*', '-')
 
 #Extract training datasets from file
 def get_dataset_from_file(filename):
-    file = open(filename, 'r')
-    dataset = []
-    for line in file:
-        dataset.append(line.strip().rstrip('\n').split(','))
+    with open(filename, 'r') as file:
+        dataset = []
+        for line in file:
+            dataset.append(line.strip().rstrip('\n').split(','))
     return dataset
 
 #Extract training classes for classification of dataset
 def get_classes_from_file(filename):
-    file = open(filename, 'r')
-    classes = []
-    for line in file:
-        classes.append(line.strip().rstrip('\n'))
+    with open(filename, 'r') as file:
+        classes = []
+        for line in file:
+            classes.append(line.strip().rstrip('\n'))
     return classes
 
 #Returns a dict where itemsets are key and classes are values
@@ -216,16 +216,26 @@ def generate_rules(dataset, classes, items, confidence_threshold, support_thresh
                 count = classwise_count[label]
                 rule_support = round(count[0]/len(dataset), 3)
                 item_support = round(item_count/len(dataset), 3)
+
+                confidence_expected = count[1]/len(dataset)
+                confidence = 0
+                lift = 1
+                conviction = 1
                 
                 try:
                     confidence = round(count[0]/item_count, 3)
-                    confidence_expected = count[1]/len(dataset)
+                except (ZeroDivisionError):
+                    pass
+
+                try:
                     lift = round(confidence/confidence_expected, 3)
+                except (ZeroDivisionError):
+                    pass
+
+                try:
                     conviction = round((1 - (confidence/lift))/(1-confidence), 3)
                 except (ZeroDivisionError):
-                    confidence = 0
-                    lift = 1
-                    conviction = 1
+                    pass
                     
                 if confidence >= confidence_threshold:
                     rule = Rule(tuple(item), label, confidence, lift, conviction, item_support)
@@ -453,7 +463,7 @@ def display_rules():
 def main():
     global global_rules
 
-    support_threshold = 0.2
+    support_threshold = 0.1
     confidence_threshold = 0.2
     coverage_threshold = 10
     top_k_rules = 50
