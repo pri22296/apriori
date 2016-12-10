@@ -15,23 +15,26 @@ class ProgressManager:
 
     def publish(self, progress_percent):
         assert self._is_allowed_to_publish is True
+        
         while self._max_entity_count * progress_percent / 100 >= self._current_entity_count:
-            
             self._current_entity_count += 1
             self._print_if_allowed(self._progress_entity_completed, end = '', flush = True)
 
     def _print_progress_bar(self, entity_count_completed, entity_count_pending):
         self._print_if_allowed(self._begin_tag, end = '', flush = True)
+        
         for i in range(entity_count_completed):
             self._print_if_allowed(self._progress_entity_completed, end = '', flush = True)
+            
         for i in range(entity_count_pending):
             self._print_if_allowed(self._progress_entity_pending, end = '', flush = True)
+            
         self._print_if_allowed(end = '\r', flush = True)
 
     def allow_to_print(self, is_allowed_to_print):
         self._is_allowed_to_print = is_allowed_to_print
 
-    def setMaxProgressEntityCount(self, count):
+    def set_max_entity_count(self, count):
         self._max_entity_count = count
 
     def set_begin_tag(self, begin_tag):
@@ -48,20 +51,24 @@ class ProgressManager:
 
     def end(self):
         while self._current_entity_count <= self._max_entity_count:
-            
             self._current_entity_count += 1
             self._print_if_allowed(self._progress_entity_completed, end = '', flush = True)
             
         self._print_if_allowed(self._end_tag, end = '', flush = True)
         tot_len = len(self._begin_tag) + len(self._end_tag) + self._max_entity_count * len(self._progress_entity_completed) + 1
         self._print_if_allowed(end = '\r')
+        
         for i in range(tot_len):
             self._print_if_allowed(' ', end = '', flush = True)
+            
         self._print_if_allowed(end = '\r')
         self._is_allowed_to_publish = False
 
-    def setProgressEntity(self, progress_entity):
-        self._progres_entity = progress_entity
+    def set_progress_entity_completed(self, progress_entity_completed):
+        self._progres_entity_completed = progress_entity_completed
+
+    def set_progress_entity_pending(self, progress_entity_pending):
+        self._progres_entity_pending = progress_entity_pending
 
 def main():
     progress_mgr = ProgressManager(50, '*', '-')
