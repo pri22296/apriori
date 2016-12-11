@@ -6,15 +6,19 @@ class TablePrinter:
         self._column_count = column_count
         self._table_width = 0
         self._format_str_row = ""
+        self._column_seperator = '|'
+        self._column_pad = " "
         self._buffered_printer = BufferedPrinter(buffer_size)
         self._column_headers = tuple(['']*column_count)
         self._column_alignments = tuple(['^']*column_count)
         self._column_widths = tuple([0]*column_count)
+        self._left_padding_widths = tuple([0]*column_count)
+        self._right_padding_widths = tuple([0]*column_count)
 
     def begin(self):
-        format_str = ("{{{{:{}{{}}}}}}|" * self._column_count).format(*self._column_alignments)
+        format_str = (("{{{{:{}{{}}}}}}" + self._column_seperator) * self._column_count).format(*self._column_alignments)
         self._format_str_row = format_str.format(*self._column_widths)
-        self._table_width = sum(self._column_widths) + self._column_count
+        self._table_width = sum(self._column_widths) + self._column_count * len(self._column_seperator)
         
         self._buffered_printer.print_buffered("-" * self._table_width)
         self._buffered_printer.print_buffered(self._format_str_row.format(*self._column_headers))
@@ -36,8 +40,24 @@ class TablePrinter:
         assert self._column_count == len(args)
         self._column_widths = args
 
+    def set_left_padding_widths(self, *args):
+        assert self._column_count == len(args)
+        self._left_padding_widths = args
+
+    def set_right_padding_widths(self, *args):
+        assert self._column_count == len(args)
+        self._right_padding_widths = args
+
+    def set_padding_widths(self, *args):
+        assert self._column_count == len(args)
+        self._left_padding_widths = args
+        self._right_padding_widths = args
+
+    def set_column_seperator(self, column_seperator):
+        self._column_seperator = column_seperator
+
     def _clamp_string(self, row_item, column_index):
-        width = self._column_widths[column_index]
+        width = self._column_widths[column_index] - self._left_padding_widths[column_index] - self._right_padding_widths[column_index]
         row_item = str(row_item)
         if len(row_item) <= width:
             return row_item
@@ -50,7 +70,9 @@ class TablePrinter:
         assert self._column_count == len(args)
         row_item_list = []
         for i, row_item in enumerate(args):
-            short_row_item = self._clamp_string(row_item, i)
+            left_pad = self._column_pad * self._left_padding_widths[i]
+            right_pad = self._column_pad * self._right_padding_widths[i]
+            short_row_item = left_pad + self._clamp_string(row_item, i) + right_pad
             row_item_list.append(short_row_item)
         content = self._format_str_row.format(*row_item_list)
         self._buffered_printer.print_buffered(content)
@@ -92,6 +114,8 @@ def demo_table_printer():
     table_printer.set_column_headers("I", "SQUARE OF I", "CUBE OF I")
     table_printer.set_column_alignments('<', '^', '>')
     table_printer.set_column_widths(20, 20, 20)
+    table_printer.set_column_seperator("[]")
+    table_printer.set_padding_widths(1,1,1)
     
     table_printer.begin()
 
