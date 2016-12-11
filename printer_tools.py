@@ -6,26 +6,35 @@ class TablePrinter:
         self._column_count = column_count
         self._table_width = 0
         self._format_str_row = ""
-        self._column_seperator = '|'
+        self._horizontal_seperator = '|'
+        self._vertical_seperator = '-'
         self._column_pad = " "
+        self._allow_initial_horizontal_seperator = False
         self._buffered_printer = BufferedPrinter(buffer_size)
         self._column_headers = tuple(['']*column_count)
         self._column_alignments = tuple(['^']*column_count)
         self._column_widths = tuple([0]*column_count)
-        self._left_padding_widths = tuple([0]*column_count)
-        self._right_padding_widths = tuple([0]*column_count)
+        self._left_padding_widths = tuple([1]*column_count)
+        self._right_padding_widths = tuple([1]*column_count)
 
     def begin(self):
-        format_str = (("{{{{:{}{{}}}}}}" + self._column_seperator) * self._column_count).format(*self._column_alignments)
+        if self._allow_initial_horizontal_seperator is True:
+            format_str = self._horizontal_seperator
+        else:
+            format_str = ''
+        format_str = (format_str + (("{{{{:{}{{}}}}}}" + self._horizontal_seperator) * self._column_count)).format(*self._column_alignments)
         self._format_str_row = format_str.format(*self._column_widths)
-        self._table_width = sum(self._column_widths) + self._column_count * len(self._column_seperator)
+        horizontal_seperator_count = self._column_count
+        if self._allow_initial_horizontal_seperator is True:
+            horizontal_seperator_count += 1
+        self._table_width = sum(self._column_widths) + horizontal_seperator_count * len(self._horizontal_seperator)
         
-        self._buffered_printer.print_buffered("-" * self._table_width)
-        self._buffered_printer.print_buffered(self._format_str_row.format(*self._column_headers))
-        self._buffered_printer.print_buffered("-" * self._table_width)
+        self._buffered_printer.print_buffered(self._vertical_seperator * int(self._table_width/len(self._vertical_seperator)))
+        self.append_row(*self._column_headers)
+        self._buffered_printer.print_buffered(self._vertical_seperator * int(self._table_width/len(self._vertical_seperator)))
 
     def end(self):
-        self._buffered_printer.print_buffered("-" * self._table_width)
+        self._buffered_printer.print_buffered(self._vertical_seperator * int(self._table_width/len(self._vertical_seperator)))
         self._buffered_printer.flush()
 
     def set_column_headers(self, *args):
@@ -40,6 +49,9 @@ class TablePrinter:
         assert self._column_count == len(args)
         self._column_widths = args
 
+    def allow_initial_horizontal_seperator(self, is_allowed):
+        self._allow_initial_horizontal_seperator = is_allowed
+
     def set_left_padding_widths(self, *args):
         assert self._column_count == len(args)
         self._left_padding_widths = args
@@ -53,8 +65,11 @@ class TablePrinter:
         self._left_padding_widths = args
         self._right_padding_widths = args
 
-    def set_column_seperator(self, column_seperator):
-        self._column_seperator = column_seperator
+    def set_horizontal_seperator(self, seperator):
+        self._horizontal_seperator = seperator
+
+    def set_vertical_seperator(self, seperator):
+        self._vertical_seperator = seperator
 
     def _clamp_string(self, row_item, column_index):
         width = self._column_widths[column_index] - self._left_padding_widths[column_index] - self._right_padding_widths[column_index]
@@ -62,7 +77,11 @@ class TablePrinter:
         if len(row_item) <= width:
             return row_item
         else:
-            clamped_string = row_item[:width-3] + '...'
+            if width <= 3:
+                ellipses_length = width
+            else:
+                ellipses_length = 3
+            clamped_string = row_item[:width-ellipses_length] + '.'*ellipses_length
             assert len(clamped_string) == width
             return clamped_string
 
@@ -111,10 +130,12 @@ def demo_buffered_printer():
 def demo_table_printer():
     print("Following is a Demo for TablePrinter\n")
     table_printer = TablePrinter(3, 30)
-    table_printer.set_column_headers("I", "SQUARE OF I", "CUBE OF I")
+    table_printer.set_column_headers("I"*34, "SQUARE OF I", "CUBE OF I")
     table_printer.set_column_alignments('<', '^', '>')
     table_printer.set_column_widths(20, 20, 20)
-    table_printer.set_column_seperator("[]")
+    table_printer.set_horizontal_seperator("|")
+    table_printer.set_vertical_seperator('=')
+    table_printer.allow_initial_horizontal_seperator(True)
     table_printer.set_padding_widths(1,1,1)
     
     table_printer.begin()
