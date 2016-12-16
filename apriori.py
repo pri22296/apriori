@@ -15,7 +15,10 @@ global_items = {}
 global_rules = []
 
 Rule = namedtuple("Rule", ('antecedent', 'consequent', 'confidence', 'lift' , 'conviction', 'support'))
-progress_mgr = ProgressManager(60, '*', '-')
+
+PROGRESS_BAR_LENGTH = 60
+PROGRESS_BAR_CHAR_COMPLETE = '*'
+PROGRESS_BAR_CHAR_PENDING = '-'
 
 #Extract training datasets from file
 def get_dataset_from_file(filename):
@@ -42,6 +45,7 @@ def get_dataset_dict(dataset, classes):
 
 #Get all the Item Values present in the dataset
 def get_initial_items(dataset, **kwargs):
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     l = []
     progress_mgr.begin()
@@ -138,7 +142,8 @@ def should_join_candidate(candidate1, candidate2):
 #generates k+1 sized itemsets from k sized itemsets
 def generate_new_items(items, **kwargs):
     new_items = []
-
+    
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     items_length = len(items)
@@ -163,6 +168,7 @@ def get_itemcount_from_classwise_count(classwise_count):
 #To remove itemsets having support less than support Threshold
 def prune_items(dataset, classes, items, support_threshold, **kwargs):
 
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     
@@ -198,6 +204,7 @@ def generate_rules(dataset, classes, items, confidence_threshold, support_thresh
     global global_rules
 
     items_length = len(items)
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     
@@ -258,6 +265,7 @@ def match_rule_data(data, rule, label):
 def get_default_class(dataset, classes, support_threshold, confidence_threshold, **kwargs):
     global global_rules
 
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
 
@@ -290,6 +298,7 @@ def prune_rules(dataset, classes, coverage_threshold, **kwargs):
     pruned_rules = []
     data_cover_count = [0]*len(dataset)
 
+    progress_mgr = ProgressManager(PROGRESS_BAR_LENGTH, PROGRESS_BAR_CHAR_COMPLETE, PROGRESS_BAR_CHAR_PENDING)
     progress_mgr.allow_to_print(kwargs.get('publish_progress', False))
     progress_mgr.begin()
     global_rules_length = len(global_rules)
@@ -347,6 +356,8 @@ def learn(support_threshold, confidence_threshold, coverage_threshold, **kwargs)
 
         #Get training classes from file
         classes = get_classes_from_file('Classes_train.txt')
+
+        assert len(dataset) == len(classes)
     except(FileNotFoundError):
         print("\nUnable to open Training Dataset")
         sys.exit(0)
@@ -397,6 +408,7 @@ def test(default_class, support_threshold, confidence_threshold, top_k_rules, **
     try:
         test_dataset = get_dataset_from_file('Itemset_test.txt')
         test_classes = get_classes_from_file('Classes_test.txt')
+        assert len(test_classes) == len(test_dataset)
     except(FileNotFoundError):
         print("\nCannot open testing data")
         sys.exit(0)
@@ -412,15 +424,21 @@ def test(default_class, support_threshold, confidence_threshold, top_k_rules, **
         table_printer.set_column_alignments('<', '^', '^')
         table_printer.set_column_widths(120, 10, 10)
         table_printer.begin()
-        
+
+    confusion_matrix = {}
+    for i in set(test_classes):
+        confusion_matrix[i] = {}
     for i,test_data in enumerate(test_dataset):
         c = classify(default_class, test_data, support_threshold, confidence_threshold, top_k_rules)
+        confusion_matrix[c][test_classes[i]] = confusion_matrix[c].get(test_classes[i], 0) + 1
         if(c == test_classes[i]):
             correct_output_counter += 1
         else:
             incorrect_output_counter += 1
             if kwargs.get('verbose', False) is True:
                 table_printer.append_row(", ".join(test_data), test_classes[i], c)
+
+    #_print_confusion_tables(confusion_matrix)
                 
     if kwargs.get('verbose', False) is True:
         table_printer.end()
@@ -428,6 +446,25 @@ def test(default_class, support_threshold, confidence_threshold, top_k_rules, **
         print("Correctly Classified {} Inputs".format(correct_output_counter))
     
     return round((correct_output_counter/(incorrect_output_counter + correct_output_counter))*100, 3)
+
+def _print_confusion_tables(confusion_matrix):
+    for i in confusion_matrix:
+        tp = confusion_matrix[i][i]
+        fp = sum(confusion_matrix[i].values()) - confusion_matrix[i][i]
+        
+        s = 0
+        for j in confusion_matrix:
+            s += confusion_matrix[j].get(i, 0)
+        fn = s - confusion_matrix[i][i]
+
+        s = 0
+        for j in confusion_matrix:
+            for k in confusion_matrix:
+                s += confusion_matrix[j].get(k, 0)
+        tn = s - tp - fp - fn
+        print(i)
+        print('tp = {}, fp = {}, fn = {}, tn = {}'.format(tp,fp,fn,tn))
+        print()
 
 def display_items():
     global global_items

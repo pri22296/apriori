@@ -21,7 +21,23 @@ def bar(xlabel, ylabel, xarray, yarray, axis):
     plt.axis(axis)
     plt.show()
 
-def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
+def accuracy_vs_support(confidence_threshold : float, coverage_threshold : int, top_k_rules : int):
+    """Plot a graph between accuracy and support threshold.
+
+    Plot a line graph between accuracy of the association rule mining based
+    classifier and support threshold.
+
+    Parameters
+    ----------
+    confidence_threshold : float
+        `confidence_threshold` of the arm based classifier(between 0 and 1).
+
+    coverage_threshold : int
+        `coverage_threshold` of the arm based classifier.
+
+    top_k_rules : int
+        `top_k_rules` of the arm based classifier.
+    """
     print("\nPlotting accuracy vs support_threshold\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Confidence Threshold is {}".format(confidence_threshold))
@@ -48,6 +64,22 @@ def accuracy_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     plot('support_threshold', 'accuracy(%)', support_threshold_list, accuracy_list, [0, 1, 0, 110])
 
 def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
+    """Plot a graph between time taken to extract rules and support threshold.
+
+    Plot a line graph between time taken to extract rules by the association rule mining based
+    classifier and support threshold.
+
+    Parameters
+    ----------
+    confidence_threshold : float
+        `confidence_threshold` of the arm based classifier(between 0 and 1).
+
+    coverage_threshold : int
+        `coverage_threshold` of the arm based classifier.
+
+    top_k_rules : int
+        `top_k_rules` of the arm based classifier.
+    """
     print("\nPlotting time taken to extract rules vs support_threshold\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Confidence Threshold is {}".format(confidence_threshold))
@@ -74,6 +106,22 @@ def timetaken_vs_support(confidence_threshold, coverage_threshold, top_k_rules):
     plot('support_threshold', 'learning_time(seconds)', support_threshold_list, timetaken_list, [0, 1, 0, 500])
 
 def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
+    """Plot a graph between accuracy and confidence threshold.
+
+    Plot a line graph between accuracy of the association rule mining based
+    classifier and confidence threshold.
+
+    Parameters
+    ----------
+    support_threshold : float
+        `support_threshold` of the arm based classifier(between 0 and 1).
+
+    coverage_threshold : int
+        `coverage_threshold` of the arm based classifier.
+
+    top_k_rules : int
+        `top_k_rules` of the arm based classifier.
+    """
     print("\nPlotting accuracy vs confidence_threshold\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Support Threshold is {}".format(support_threshold))
@@ -100,6 +148,20 @@ def accuracy_vs_confidence(support_threshold, coverage_threshold, top_k_rules):
     plot('confidence_threshold', 'accuracy(%)', confidence_threshold_list, accuracy_list, [0, 1, 0, 110])
 
 def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
+    """Plot a graph between accuracy achieved at each iteration of GA optimization.
+
+    Plot a line graph between accuracy of the association rule mining based
+    classifier and iteration count of GA on the parameters
+    support_threshold and confidence_threshold.
+
+    Parameters
+    ----------
+    coverage_threshold : int
+        `coverage_threshold` of the arm based classifier.
+
+    top_k_rules : int
+        `top_k_rules` of the arm based classifier.
+    """
     print("\nPlotting accuracy vs ga_iteration_count\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
@@ -116,6 +178,20 @@ def accuracy_vs_ga_iteration(coverage_threshold, top_k_rules):
     plt.show()
 
 def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
+    """Plot a graph between accuracy achieved at each iteration of PSO optimization.
+
+    Plot a line graph between accuracy of the association rule mining based
+    classifier and iteration count of PSO on the parameters
+    support_threshold and confidence_threshold.
+
+    Parameters
+    ----------
+    coverage_threshold : int
+        `coverage_threshold` of the arm based classifier.
+
+    top_k_rules : int
+        `top_k_rules` of the arm based classifier.
+    """
     print("\nPlotting accuracy vs pso_iteration_count\n")
     print("top_k_rules is {}".format(top_k_rules))
     print("Coverage Threshold is {}\n".format(coverage_threshold))
@@ -132,9 +208,14 @@ def accuracy_vs_pso_iteration(coverage_threshold, top_k_rules):
     plt.show()
 
 def chi2_stats_vs_feature():
+    """Plot a graph between Chi-Square statistics and features.
+
+    Plot 2 bar graphs side by side of Chi-Square stats of the feature and critical
+    value for comparison. log is used to appropriately scaling for better visualization.
+    """
     print("\nPlotting chi square statistics vs Features\n")
     
-    features, chi2_critical, chi2_stats = chi2_feature_select.main()
+    features, chi2_critical, chi2_stats = chi2_feature_select.get_chi2_stats(verbose = True)
     width = 0.8
 
     chi2_critical = list(map(math.log, chi2_critical))
